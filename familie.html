@@ -266,7 +266,7 @@ function renderSmallTree(id){
  const me=byNode.get(id+"-1");
  for(const pid of rel.par){const n=byNode.get(pid+"-0");if(n&&me)edges.push([n,me])}
  for(const pid of rel.children){const n=byNode.get(pid+"-2");if(n&&me)edges.push([me,n])}
- const safe=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;":"&#39;"}[c]));
+ const safe=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const lines=edges.map(([a,b])=>'<path d="M'+(a.x+87)+' '+(a.y+55)+' L'+(b.x+87)+' '+b.y+'" stroke="#a0c9a8" stroke-width="2" fill="none"/>').join("");
  const cards=nodes.map(n=>'<g data-id="'+n.id+'"><rect x="'+n.x+'" y="'+n.y+'" rx="12" width="174" height="55" fill="'+(n.id===id?"#dceee1":"white")+'" stroke="#8cbb9d"/><text x="'+(n.x+9)+'" y="'+(n.y+25)+'" font-family="system-ui" font-size="10.4" fill="#173e30">'+safe(nameFor(n.id).slice(0,27))+'</text><text x="'+(n.x+9)+'" y="'+(n.y+43)+'" font-size="9" fill="#60786b">'+(n.r===0?"Forelder":n.r===2?"Barn":n.id===id?"Valgt person":"Søsken")+'</text></g>').join("");
  treeSize={width,height};treeZoom=Math.min(1.1,($("treeport").clientWidth-10)/width);
