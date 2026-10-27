@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Familierommet · Våre røtter</title>
+<style>
+:root{color-scheme:light;--dark:#173e30;--leaf:#347557;--text:#23382e;--muted:#64786b;--edge:#d8e6da;--bg:#f6f8f2;--pink:#f9f4e9}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+header{background:var(--dark);color:white;padding:22px max(20px,calc((100vw - 1160px)/2));display:flex;gap:12px;align-items:center}
+header h1{margin:0;font:normal 28px Georgia,serif}header p{margin:2px 0 0;color:#d2e4d7;font-size:12px}header a{margin-left:auto;color:white;font-size:13px;border:1px solid #ffffff55;border-radius:10px;padding:8px 12px;text-decoration:none}
+main{width:min(1160px,calc(100% - 32px));margin:34px auto 60px}.card{background:#fff;border:1px solid var(--edge);border-radius:18px;padding:25px;box-shadow:0 10px 30px #2540300c}
+.narrow{max-width:535px;margin:36px auto}.eyebrow{color:var(--leaf);font-size:11px;letter-spacing:2px;font-weight:750;text-transform:uppercase}
+h2{font:normal clamp(29px,4vw,41px) Georgia,serif;margin:9px 0 12px}h3{font:normal 23px Georgia,serif;margin:0 0 12px}
+p{margin:8px 0 14px}.muted{color:var(--muted);font-size:13px}.notice{background:var(--pink);border-left:3px solid #b79e63;padding:13px 15px;font-size:13px;border-radius:6px}
+input,textarea,select{width:100%;padding:13px 14px;border-radius:10px;border:1px solid #c7d7c9;background:#fff;color:var(--text);font:inherit}
+textarea{resize:vertical;min-height:130px}label{display:block;font-size:13px;font-weight:700;margin:17px 0 7px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;background:var(--dark);color:white;padding:12px 17px;font-weight:700}
+button.secondary{background:#e9f3e9;color:var(--dark);border:1px solid var(--edge)}
+button:disabled{opacity:.5;cursor:not-allowed}.hidden{display:none!important}.status{font-size:13px;min-height:18px;margin:12px 0;color:var(--leaf)}.status.error{color:#ac4436}
+.top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}.top p{margin:0}
+.layout{display:grid;grid-template-columns:minmax(290px,370px) minmax(0,1fr);gap:18px;align-items:start}
+.member-list{max-height:58vh;overflow:auto;display:grid;gap:7px;margin-top:13px}
+.member-list button{background:#f6faf5;border:1px solid var(--edge);color:var(--text);text-align:left;padding:11px 12px}
+.member-list button.selected{background:#dceee0;border-color:#7fa88a}
+.member-list small{display:block;color:var(--muted);font-weight:normal}
+.divider{border-top:1px solid var(--edge);margin:19px 0}
+.family-links{display:flex;flex-wrap:wrap;gap:7px}
+.family-links button{padding:8px 11px;background:#ecf5ed;border:1px solid var(--edge);color:var(--dark);font-size:12px}
+.story{padding:14px 0;border-top:1px solid var(--edge)}
+.story h4{margin:0;font:normal 19px Georgia,serif}.story p{white-space:pre-wrap;margin:8px 0;color:#495f50}.story small{font-size:11px;color:var(--muted)}
+.file{display:flex;gap:8px;align-items:center;border:1px solid var(--edge);border-radius:11px;padding:8px 11px;margin:6px 0;justify-content:space-between}
+.file button{font-size:12px;padding:8px 11px}.pill{display:inline-block;background:#e4efe4;border-radius:22px;padding:3px 10px;font-size:11px;font-weight:700;color:#2b674a}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}.count{font-size:13px;color:var(--muted)}
+#tree-panel{background:#fdfefd;border:1px solid var(--edge);border-radius:14px;overflow:hidden;margin-top:12px}
+#tree-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:11px 12px;border-bottom:1px solid var(--edge);font-size:12px;color:var(--muted)}
+#tree-head button{font-size:12px;padding:6px 9px}
+#treeport{height:360px;overflow:auto;touch-action:none;background:radial-gradient(#dcebdc .7px,transparent .7px) 0 0/18px 18px}
+#treeport svg{display:block;max-width:none}
+footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid var(--edge);font-size:12px}
+@media(max-width:810px){.layout{grid-template-columns:1fr}.member-list{max-height:220px}#treeport{height:440px}}
+@media(max-width:520px){.card{padding:18px}header{padding:14px 18px}header h1{font-size:22px}header a{font-size:11px}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><span style="font-size:31px">🌳</span><div><h1>Våre røtter</h1><p>Familierommet · Privat slektstre og minnebok</p></div><a href="./index.html">Historisk oversikt</a></header>
+<main>
+<section class="card narrow" id="login">
+  <div class="eyebrow">Familien · Innlogging</div>
+  <h2>Historiene våre, samlet på ett sted.</h2>
+  <p class="muted">Her kan familiemedlemmer lese slektstreet, dele minner og legge inn bilder. Du trenger e-post og familiens invitasjonskode første gang.</p>
+  <form id="emailForm">
+    <label for="email">E-postadresse</label>
+    <input id="email" type="email" placeholder="navn@epost.no" autocomplete="email" required>
+    <button type="submit" style="margin-top:14px">Send meg innloggingslenke</button>
+  </form>
+  <p id="loginStatus" class="status" aria-live="polite"></p>
+  <div class="notice">Innloggingen beskytter slektsopplysningene på serveren. Den åpne GitHub-siden inneholder bare den historiske oversikten. Ikke del familiens kode offentlig.</div>
+</section>
+<section class="card narrow hidden" id="join">
+  <div class="eyebrow">Kun første gang</div><h2>Velkommen til familien!</h2>
+  <p class="muted" id="joiningAs"></p>
+  <p>Skriv navnet ditt og familiens kode. Koden kontrolleres på serveren, ikke i denne nettsiden.</p>
+  <form id="joinForm">
+    <label for="displayName">Navnet ditt</label><input id="displayName" maxlength="100" placeholder="Fornavn og etternavn" required>
+    <label for="familyCode">Familiekode</label><input id="familyCode" type="password" autocomplete="off" maxlength="40" placeholder="Koden fra familiegruppen" required>
+    <button type="submit" style="margin-top:14px">Bli med i familierommet</button>
+  </form>
+  <p id="joinStatus" class="status" aria-live="polite"></p><button id="signOutJoin" class="secondary">Logg ut</button>
+</section>
+<section id="private" class="hidden">
+  <div class="top"><div><h2 style="margin-bottom:4px">Velkommen til familierommet 🌿</h2><p class="muted" id="welcome"></p></div><button class="secondary" id="signOut">Logg ut</button></div>
+  <div class="layout">
+    <section class="card">
+      <h3>Finn en slektning</h3><p class="muted">Trykk på en person for å se familieforhold, historier og bilder.</p>
+      <input id="personSearch" type="search" placeholder="Søk etter navn..." aria-label="Søk etter slektning">
+      <p class="count" id="personCount"></p><div class="member-list" id="people"></div>
+    </section>
+    <section class="card">
+      <div id="personContent"><h3>Velg noen fra listen 🌳</h3><p class="muted">Slektninger og minner vises her.</p></div>
+      <div id="details" class="hidden">
+        <div class="divider"></div>
+        <h3>Familiekart</h3><p class="muted">Dra med én finger og zoom med to. Trykk på en person for å gå til profilen.</p>
+        <div id="tree-panel">
+          <div id="tree-head"><span>Slektninger på begge sider</span><div><button class="secondary" id="zoomOut">−</button><button class="secondary" id="zoomIn">+</button><button class="secondary" id="zoomFit">Tilpass</button></div></div>
+          <div id="treeport"></div>
+        </div>
+        <div class="divider"></div>
+        <h3>Familiens historier</h3>
+        <div id="stories"></div>
+        <form id="storyForm">
+          <label for="storyTitle">Skriv en historie eller et minne</label>
+          <input id="storyTitle" maxlength="250" placeholder="Tittel på historien" required>
+          <label for="storyText">Historien</label><textarea id="storyText" placeholder="Hva husker du om denne personen? Hvor fant hendelsen sted?..." required></textarea>
+          <label for="storyYear">Årstall (valgfritt)</label><input id="storyYear" type="number" min="1200" max="2200" placeholder="For eksempel 1888">
+          <button type="submit" style="margin-top:12px">Lagre historien</button>
+        </form>
+        <p id="storyStatus" class="status" aria-live="polite"></p>
+        <div class="divider"></div>
+        <h3>Bilder og dokumenter</h3>
+        <p class="muted">Legg til fotografier, brev eller avisutklipp. Maks 15 MB per fil.</p>
+        <div id="files"></div>
+        <form id="uploadForm">
+          <label for="upload">Velg bilde eller PDF</label>
+          <input id="upload" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+          <button type="submit" style="margin-top:12px">Legg til i personarkivet</button>
+        </form><p id="uploadStatus" class="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </div>
+</section>
+</main><footer>Våre røtter · Bare aktive familiemedlemmer får lese og skrive i det private arkivet.</footer>
+<script type="module">
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/+esm";
+const URL="https://wtswwjancxiofkjmulvl.supabase.co";
+const PUBLIC_KEY="sb_publishable_UbN2Fmn7U4J8HRaPZBTxNg_GVIaMm4g";
+const APP_URL="https://moholdt123.github.io/V-re-r-tter/familie.html";
+const db=createClient(URL,PUBLIC_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+const show=id=>$(id).classList.remove("hidden");
+const hide=id=>$(id).classList.add("hidden");
+const notice=(id,message,error=false)=>{$(id).textContent=message;$(id).classList.toggle("error",error)};
+let user=null,profile=null,persons=[],ties=[],chosen=null,treeZoom=1,treeSize={width:1000,height:600};
+const personById=()=>new Map(persons.map(p=>[p.id,p]));
+function text(tag,content,cls){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=content;return el}
+function nameFor(id){return persons.find(p=>p.id===id)?.navn||"Ukjent"}
+function authErrorMessage(error){const msg=error?.message||String(error);return msg.includes("rate")?"For mange forsøk. Prøv igjen senere.":msg}
+async function updateState(){
+ const {data:{session}}=await db.auth.getSession();
+ user=session?.user||null;profile=null;
+ if(!user){show("login");hide("join");hide("private");return}
+ const {data:p,error}=await db.from("familie_medlemmer").select("visningsnavn,status,rolle").eq("bruker_id",user.id).maybeSingle();
+ if(error){show("login");hide("join");hide("private");notice("loginStatus","Kunne ikke sjekke tilgang: "+authErrorMessage(error),true);return}
+ profile=p;
+ hide("login");
+ if(p?.status==="sperret"){show("join");hide("private");hide("joinForm");$("joiningAs").textContent="Tilgangen er sperret. Kontakt familieadministrator.";return}
+ if(p?.status!=="aktiv"){show("join");show("joinForm");hide("private");$("joiningAs").textContent="E-post bekreftet: "+(user.email||"");return}
+ hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
+ await loadPrivate();
+}
+$("emailForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const btn=e.target.querySelector("button");btn.disabled=true;notice("loginStatus","Sender e-post ...");
+ const {error}=await db.auth.signInWithOtp({email:$("email").value.trim(),options:{emailRedirectTo:APP_URL,shouldCreateUser:true}});
+ notice("loginStatus",error?"Kunne ikke sende: "+authErrorMessage(error):"Sjekk e-posten din og trykk på innloggingslenken. Åpne lenken på samme enhet.",Boolean(error));
+ btn.disabled=false;
+});
+$("joinForm").addEventListener("submit",async e=>{
+ e.preventDefault();const btn=e.target.querySelector("button");btn.disabled=true;
+ notice("joinStatus","Sjekker invitasjonen ...");
+ const {data,error}=await db.functions.invoke("familie-tilgang",{body:{code:$("familyCode").value,name:$("displayName").value}});
+ if(error||!data?.ok){notice("joinStatus",data?.error||"Kunne ikke godkjenne koden. "+authErrorMessage(error||""),true);btn.disabled=false;return}
+ $("familyCode").value="";btn.disabled=false;notice("joinStatus","Du har fått tilgang!");await updateState();
+});
+async function signOut(){await db.auth.signOut();chosen=null;await updateState()}
+$("signOut").addEventListener("click",signOut);$("signOutJoin").addEventListener("click",signOut);
+async function loadPrivate(){
+ const [ps,rel]=await Promise.all([
+  db.from("personer").select("id,navn,lever,fodt_ar,dod_ar,kort_biografi,kildehenvisning").order("navn"),
+  db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet")
+ ]);
+ if(ps.error||rel.error){$("personContent").replaceChildren(text("p","Kunne ikke hente slektstreet: "+authErrorMessage(ps.error||rel.error),"muted"));return}
+ persons=ps.data||[];ties=rel.data||[];
+ renderPeople();
+ if(chosen&&persons.some(p=>p.id===chosen))await choosePerson(chosen);
+ else if(persons.length)await choosePerson(persons.find(p=>p.navn.includes("Ingvald Andreas"))?.id||persons[0].id);
+}
+function renderPeople(){
+ const search=$("personSearch").value.trim().toLocaleLowerCase("nb");
+ const list=persons.filter(p=>p.navn.toLocaleLowerCase("nb").includes(search));
+ $("personCount").textContent=list.length+" av "+persons.length+" personer";
+ const frag=document.createDocumentFragment();
+ for(const p of list.slice(0,200)){
+  const b=document.createElement("button");b.type="button";b.classList.toggle("selected",p.id===chosen);
+  b.append(text("strong",p.navn),text("small",(p.fodt_ar||"?")+"–"+(p.dod_ar||"?")));b.onclick=()=>choosePerson(p.id);frag.append(b);
+ }
+ $("people").replaceChildren(frag);
+}
+$("personSearch").addEventListener("input",renderPeople);
+function related(id){
+ const par=ties.filter(t=>t.type==="forelder_barn"&&t.til_person===id).map(t=>t.fra_person);
+ const children=ties.filter(t=>t.type==="forelder_barn"&&t.fra_person===id).map(t=>t.til_person);
+ const sib=ties.filter(t=>t.type==="forelder_barn"&&par.includes(t.fra_person)&&t.til_person!==id).map(t=>t.til_person);
+ return {par,children,sib:[...new Set(sib)]};
+}
+function relatedLinks(section,title,ids){
+ if(!ids.length)return;
+ const sectionEl=text("div","");sectionEl.append(text("label",title));
+ const links=text("div","","family-links");for(const id of ids){const b=text("button",nameFor(id));b.type="button";b.onclick=()=>choosePerson(id);links.append(b)}sectionEl.append(links);section.append(sectionEl);
+}
+async function choosePerson(id){
+ const p=persons.find(p=>p.id===id);if(!p)return;
+ chosen=id;renderPeople();show("details");
+ $("personContent").replaceChildren();
+ $("personContent").append(text("h2",p.navn));
+ $("personContent").append(text("span",[(p.fodt_ar||"?"),(p.dod_ar||"?")].join("–"),"pill"));
+ if(p.kort_biografi)$("personContent").append(text("p",p.kort_biografi));
+ if(p.kildehenvisning)$("personContent").append(text("p","Kilder: "+p.kildehenvisning,"muted"));
+ const rel=related(id);
+ relatedLinks($("personContent"),"Foreldre",rel.par);relatedLinks($("personContent"),"Søsken",rel.sib);relatedLinks($("personContent"),"Barn",rel.children);
+ renderSmallTree(id);
+ await Promise.all([loadStories(id),loadFiles(id)]);
+}
+async function loadStories(personId){
+ const target=$("stories");target.replaceChildren(text("p","Henter historier ...","muted"));
+ const {data,error}=await db.from("historier").select("id,tittel,innhold,hendelsesar,kategori,signatur,kildehenvisning,opprettet").eq("person_id",personId).order("opprettet",{ascending:false});
+ if(chosen!==personId)return;
+ if(error){target.replaceChildren(text("p",authErrorMessage(error),"muted"));return}
+ if(!data?.length){target.replaceChildren(text("p","Ingen historier ennå. Vil du fortelle den første?","muted"));return}
+ target.replaceChildren();
+ for(const h of data){
+  const el=text("article","","story");el.append(text("h4",h.tittel));
+  el.append(text("small",[h.hendelsesar,h.signatur||"Familien",h.kategori].filter(Boolean).join(" · ")));
+  el.append(text("p",h.innhold));if(h.kildehenvisning)el.append(text("small","Kilde: "+h.kildehenvisning));target.append(el);
+ }
+}
+$("storyForm").addEventListener("submit",async e=>{
+ e.preventDefault();if(!chosen||!user)return;const btn=e.target.querySelector("button");btn.disabled=true;
+ notice("storyStatus","Lagrer ...");
+ const title=$("storyTitle").value.trim(),body=$("storyText").value.trim(),year=$("storyYear").value.trim();
+ const {error}=await db.from("historier").insert({person_id:chosen,skrevet_av:user.id,signatur:profile.visningsnavn,tittel:title,innhold:body,hendelsesar:year?Number(year):null,kategori:"minne"});
+ notice("storyStatus",error?authErrorMessage(error):"Historien er lagret slik at familien kan lese den.",!!error);
+ if(!error){$("storyForm").reset();await loadStories(chosen)}btn.disabled=false;
+});
+async function loadFiles(personId){
+ const el=$("files");el.replaceChildren();
+ const {data,error}=await db.from("arkivfiler").select("id,lagringssti,filnavn,beskrivelse").eq("person_id",personId).order("opprettet",{ascending:false});
+ if(chosen!==personId)return;
+ if(error){el.append(text("p",authErrorMessage(error),"muted"));return}
+ if(!data?.length){el.append(text("p","Ingen bilder eller dokumenter ennå.","muted"));return}
+ for(const f of data){
+  const row=text("div","","file");row.append(text("span",f.filnavn||f.beskrivelse||"Dokument"));
+  const b=text("button","Åpne");b.type="button";b.onclick=async()=>{
+   const {data:d,error:e}=await db.storage.from("familiearkiv").createSignedUrl(f.lagringssti,120);
+   if(e){notice("uploadStatus","Kunne ikke åpne: "+authErrorMessage(e),true);return}
+   window.open(d.signedUrl,"_blank","noopener,noreferrer");
+  };row.append(b);el.append(row);
+ }
+}
+$("uploadForm").addEventListener("submit",async e=>{
+ e.preventDefault();if(!chosen||!user)return;
+ const file=$("upload").files?.[0];if(!file)return;
+ const valid=["image/jpeg","image/png","image/webp","application/pdf"];
+ if(file.size>15728640||!valid.includes(file.type)){notice("uploadStatus","Velg JPG, PNG, WebP eller PDF på maks 15 MB.",true);return}
+ const btn=e.target.querySelector("button");btn.disabled=true;notice("uploadStatus","Laster opp ...");
+ const name=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-95);
+ const path=user.id+"/"+crypto.randomUUID()+"-"+name;
+ const {error:uploadError}=await db.storage.from("familiearkiv").upload(path,file,{upsert:false,contentType:file.type});
+ if(uploadError){notice("uploadStatus",authErrorMessage(uploadError),true);btn.disabled=false;return}
+ const {error:saveError}=await db.from("arkivfiler").insert({person_id:chosen,lastet_opp_av:user.id,lagringssti:path,filnavn:file.name});
+ if(saveError){await db.storage.from("familiearkiv").remove([path]);notice("uploadStatus",authErrorMessage(saveError),true)}
+ else{notice("uploadStatus","Filen er lagret i det private familiearkivet.");$("uploadForm").reset();await loadFiles(chosen)}
+ btn.disabled=false;
+});
+// Oversikt: valgt person i midten med foreldre, søsken og barn.
+function renderSmallTree(id){
+ const rel=related(id),layers=[rel.par,rel.sib.concat([id]),rel.children];const max=Math.max(1,...layers.map(a=>a.length));
+ const width=Math.max(650,max*210+50),height=420;
+ const nodes=[],edges=[];
+ const yPositions=[48,184,315];
+ layers.forEach((arr,r)=>{
+  const start=(width-arr.length*195)/2;
+  arr.forEach((pid,i)=>nodes.push({id:pid,x:start+i*195,y:yPositions[r],r}));
+ });
+ const byNode=new Map(nodes.map(n=>[n.id+"-"+n.r,n]));
+ const me=byNode.get(id+"-1");
+ for(const pid of rel.par){const n=byNode.get(pid+"-0");if(n&&me)edges.push([n,me])}
+ for(const pid of rel.children){const n=byNode.get(pid+"-2");if(n&&me)edges.push([me,n])}
+ const safe=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;":"&#39;"}[c]));
+ const lines=edges.map(([a,b])=>'<path d="M'+(a.x+87)+' '+(a.y+55)+' L'+(b.x+87)+' '+b.y+'" stroke="#a0c9a8" stroke-width="2" fill="none"/>').join("");
+ const cards=nodes.map(n=>'<g data-id="'+n.id+'"><rect x="'+n.x+'" y="'+n.y+'" rx="12" width="174" height="55" fill="'+(n.id===id?"#dceee1":"white")+'" stroke="#8cbb9d"/><text x="'+(n.x+9)+'" y="'+(n.y+25)+'" font-family="system-ui" font-size="10.4" fill="#173e30">'+safe(nameFor(n.id).slice(0,27))+'</text><text x="'+(n.x+9)+'" y="'+(n.y+43)+'" font-size="9" fill="#60786b">'+(n.r===0?"Forelder":n.r===2?"Barn":n.id===id?"Valgt person":"Søsken")+'</text></g>').join("");
+ treeSize={width,height};treeZoom=Math.min(1.1,($("treeport").clientWidth-10)/width);
+ $("treeport").innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="'+(width*treeZoom)+'" height="'+(height*treeZoom)+'" viewBox="0 0 '+width+' '+height+'">'+lines+cards+'</svg>';
+ for(const n of $("treeport").querySelectorAll("g[data-id]")){n.style.cursor="pointer";n.onclick=()=>choosePerson(n.getAttribute("data-id"))}
+}
+function setTreeZoom(value){
+ const svg=$("treeport").querySelector("svg");if(!svg)return;
+ treeZoom=Math.min(3,Math.max(.3,value));
+ svg.setAttribute("width",String(treeSize.width*treeZoom));svg.setAttribute("height",String(treeSize.height*treeZoom));
+}
+$("zoomIn").onclick=()=>setTreeZoom(treeZoom*1.25);
+$("zoomOut").onclick=()=>setTreeZoom(treeZoom/1.25);
+$("zoomFit").onclick=()=>setTreeZoom(Math.min(1.1,($("treeport").clientWidth-10)/treeSize.width));
+const port=$("treeport");let finger=null,pinchStart=0,startZoom=1;
+port.addEventListener("touchstart",e=>{if(e.touches.length===1){finger={x:e.touches[0].clientX,y:e.touches[0].clientY}}else if(e.touches.length>=2){pinchStart=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);startZoom=treeZoom;finger=null}},{passive:true});
+port.addEventListener("touchmove",e=>{e.preventDefault();if(e.touches.length>=2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pinchStart)setTreeZoom(startZoom*d/pinchStart)}else if(e.touches.length===1&&finger){const t=e.touches[0];port.scrollLeft-=t.clientX-finger.x;port.scrollTop-=t.clientY-finger.y;finger={x:t.clientX,y:t.clientY}}},{passive:false});
+port.addEventListener("touchend",()=>{finger=null;pinchStart=0},{passive:true});
+db.auth.onAuthStateChange((event)=>{if(["SIGNED_IN","SIGNED_OUT"].includes(event))setTimeout(updateState,0)});
+updateState().catch(err=>notice("loginStatus","Kunne ikke starte: "+authErrorMessage(err),true));
+</script>
+</body></html>
