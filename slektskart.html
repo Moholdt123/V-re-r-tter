@@ -527,10 +527,24 @@ function ancestryLayout(root,allowed,config){
  }
  place(root,0,"self");
  const keys=Array.from({length:maxDepth+1},(_,i)=>i);
+ const width=Math.max(650,2*pad+rootWeight*stride+gapX);
+ const height=pad*2+130+(maxDepth+1)*(nodeH+gapY);
+ const panels=[];
+ if(root===mine){
+  for(const [side,title,fill,stroke,color] of [
+    ["maternal","MORS SIDE","#eef6f9","#b8d7e4","#31728d"],
+    ["paternal","FARS SIDE","#fcf6eb","#dfc99e","#8b6a31"]
+  ]){
+   const coords=[...loc].filter(([id])=>sideMap.get(id)===side).map(([,pos])=>pos);
+   if(!coords.length)continue;
+   const left=Math.max(20,Math.min(...coords.map(p=>p.x))-pad*0.4);
+   const right=Math.max(...coords.map(p=>p.x+nodeW))+pad*0.4;
+   panels.push({x:left,w:Math.max(300,right-left),title,fill,stroke,color,count:coords.length});
+  }
+ }
  return {
-  ids:new Set(loc.keys()),split:true,sideMap,loc,
-  width:Math.max(650,2*pad+rootWeight*stride+gapX),
-  height:pad*2+130+(maxDepth+1)*(nodeH+gapY),
+  ids:new Set(loc.keys()),split:root===mine,sideMap,loc,
+  width,height,panels,
   nodeW,nodeH,keys,ancestryTree:true,root
  };
 }
@@ -645,7 +659,7 @@ function render(){
  const {ids,split,sideMap,loc,width,height,nodeW,nodeH,keys}=layout,port=$("treePort");
  if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
  const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
- if(split){
+ if(split&&layout.panels?.length){
   for(const band of layout.panels){
    svg.append(svgEl("rect",{x:band.x-12,y:15,width:band.w+24,height:height-35,rx:20,fill:band.fill,stroke:band.stroke,"stroke-width":1.8}));
    const heading=svgEl("text",{x:band.x+band.w/2,y:46,"text-anchor":"middle","font-family":"system-ui","font-size":18,"font-weight":800,fill:band.color});
