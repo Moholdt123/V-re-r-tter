@@ -59,6 +59,25 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
 
 @media(max-width:810px){.layout{grid-template-columns:1fr}.member-list{max-height:220px}#treeport{height:440px}}
 @media(max-width:520px){.card{padding:18px}header{padding:14px 18px}header h1{font-size:22px}header a{font-size:11px}.two{grid-template-columns:1fr}}
+
+/* Mer lesbart på mobil: én hel bredde per besteforeldregren. */
+@media (max-width:650px){
+  .private-ancestor-level{grid-template-columns:1fr;gap:12px}
+  .private-ancestor-side{padding:12px}
+  .private-pair{gap:10px}
+  .private-person{padding:12px 8px;min-height:66px}
+  .private-person strong{font-size:14px;overflow-wrap:normal;word-break:normal;hyphens:auto}
+  .private-parent-level .private-person strong{font-size:13px}
+}
+.private-bridge-intro{margin-top:23px;border-top:1px solid var(--edge);padding-top:18px}
+.private-bridge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.private-bridge-group{background:#f4f8f1;border:1px solid var(--edge);border-radius:12px;padding:12px;min-width:0}
+.private-bridge-group h5{font-size:13px;color:var(--dark);margin:0 0 8px}
+.private-bridge-button{display:block;width:100%;text-align:left;background:white;color:var(--dark);border:1px solid #abcbb1;padding:11px 10px;margin:6px 0}
+.private-bridge-button strong{display:block;overflow-wrap:anywhere}
+.private-bridge-button small{display:block;color:var(--muted);font-weight:400}
+@media(max-width:520px){.private-bridge-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -122,6 +141,14 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
       <div class="private-tree-line" aria-hidden="true">│<br>↓</div>
       <div class="private-me" id="mySelfNode"></div>
     </div>
+
+    <div class="private-bridge-intro">
+      <h4 style="margin:0">Fortsett bakover i slekten 🌿</h4>
+      <p class="muted">Vi har funnet koblinger mellom familieutkastet ditt og eksisterende historiske personprofiler. Trykk på et navn for å åpne profilen og utforske foreldrene og tidligere generasjoner.</p>
+      <div id="historicalBridgeItems" class="private-bridge-grid" aria-live="polite"></div>
+      <p class="muted">Koblingene bygger på familiens slektsnotater, ikke på ny kontroll mot originalkilder. De vises bare for din konto, og navnene på levende slektninger deles ikke videre.</p>
+    </div>
+
     <details id="privateBranchEditor">
       <summary style="cursor:pointer;font-weight:700;padding:10px 0">Rett navnene i mitt private slektstre</summary>
       <form id="privateBranchForm">
@@ -266,6 +293,50 @@ function renderOwnFamilyBranch(){
   const me=$("livingSelfName").value.trim()||"Deg";
   $("mySelfNode").replaceChildren(text("strong",me),text("small","Din private profil"));
 }
+
+let privateHistoricalBridges=[];
+async function loadOwnHistoricalBridges(){
+  if(!user||profile?.status!=="aktiv")return;
+  const {data,error}=await db.from("familiegren_historiske_koblinger")
+    .select("relasjon,historisk_person_id,kobling,kildegrunnlag")
+    .eq("bruker_id",user.id);
+  if(error){
+    $("historicalBridgeItems").replaceChildren(text("p","Kunne ikke hente de private historiske koblingene: "+authErrorMessage(error),"muted"));
+    return;
+  }
+  privateHistoricalBridges=data||[];
+  renderPrivateHistoricalBridges();
+}
+function renderPrivateHistoricalBridges(){
+  const target=$("historicalBridgeItems");
+  if(!target)return;
+  target.replaceChildren();
+  if(!persons.length){
+    target.append(text("p","Henter historiske slektsopplysninger ...","muted"));
+    return;
+  }
+  const groups=[["morfar","Morfars gren"],["mormor","Mormors gren"],["farmor","Farmors gren"],["farfar","Farfars gren"]];
+  for(const [slot,label] of groups){
+    const box=document.createElement("section");box.className="private-bridge-group";
+    box.append(text("h5",label));
+    const rows=privateHistoricalBridges.filter(x=>x.relasjon===slot);
+    if(!rows.length)box.append(text("p","Ingen historisk kobling registrert ennå.","muted"));
+    for(const link of rows){
+      const person=persons.find(p=>p.id===link.historisk_person_id);
+      if(!person)continue;
+      const b=document.createElement("button");b.type="button";b.className="private-bridge-button";
+      const relationship=link.kobling==="samme_person"?"Samme person som i utkastet":"Forelder til personen i utkastet";
+      b.append(text("strong",person.navn),text("small",relationship+" · "+(person.fodt_ar||"?")+"–"+(person.dod_ar||"?")));
+      b.addEventListener("click",async()=>{
+        await choosePerson(person.id);
+        $("personContent").scrollIntoView({behavior:"smooth",block:"start"});
+      });
+      box.append(b);
+    }
+    target.append(box);
+  }
+}
+
 async function loadOwnFamilyBranch(){
   if(!user||profile?.status!=="aktiv")return;
   const {data,error}=await db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",user.id);
@@ -295,7 +366,7 @@ $("privateBranchForm").addEventListener("submit",async event=>{
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
- if(!user){privateFamilyData.clear();show("login");hide("join");hide("private");return}
+ if(!user){privateFamilyData.clear();privateHistoricalBridges=[];persons=[];ties=[];show("login");hide("join");hide("private");return}
  const {data:p,error}=await db.from("familie_medlemmer").select("visningsnavn,status,rolle").eq("bruker_id",user.id).maybeSingle();
  if(error){show("login");hide("join");hide("private");notice("loginStatus","Kunne ikke sjekke tilgang: "+authErrorMessage(error),true);return}
  profile=p;
@@ -305,6 +376,7 @@ async function updateState(){
  hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
  await loadOwnLivingProfile();
  await loadOwnFamilyBranch();
+ await loadOwnHistoricalBridges();
  await loadPrivate();
 }
 $("emailForm").addEventListener("submit",async e=>{
@@ -330,6 +402,7 @@ async function loadPrivate(){
  ]);
  if(ps.error||rel.error){$("personContent").replaceChildren(text("p","Kunne ikke hente slektstreet: "+authErrorMessage(ps.error||rel.error),"muted"));return}
  persons=ps.data||[];ties=rel.data||[];
+ renderPrivateHistoricalBridges();
  renderPeople();
  if(chosen&&persons.some(p=>p.id===chosen))await choosePerson(chosen);
  else if(persons.length)await choosePerson(persons.find(p=>p.navn.includes("Ingvald Andreas"))?.id||persons[0].id);
