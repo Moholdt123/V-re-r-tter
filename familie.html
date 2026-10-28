@@ -109,6 +109,20 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
 <section id="private" class="hidden">
   <div class="top"><div><h2 style="margin-bottom:4px">Velkommen til familierommet 🌿</h2><p class="muted" id="welcome"></p></div><button class="secondary" id="signOut">Logg ut</button></div>
   
+
+  <section class="card hidden" id="familyCodeAdmin" style="margin-bottom:18px;border:1px solid #bfd6c6;background:#f4faf3">
+    <div class="eyebrow">Bare for administrator</div>
+    <h3>🔐 Familiens felles passord</h3>
+    <p class="muted">Velg én enkel familiekode som du kan gi til bestemor, tanter og søsken. De trenger ikke e-post for å lese det historiske slektstreet. Koden gir <strong>ikke</strong> tilgang til dine private opplysninger om levende personer eller administrasjon.</p>
+    <form id="setFamilyCodeForm">
+      <label for="newFamilyCode">Velg familiepassord (6–20 bokstaver eller tall)</label>
+      <input id="newFamilyCode" minlength="6" maxlength="25" type="text" placeholder="Velg en kode familien husker" autocomplete="off" required style="max-width:360px">
+      <button type="submit" style="display:block;margin-top:12px">Lagre familiepassordet</button>
+    </form>
+    <p id="familyCodeAdminStatus" class="status" aria-live="polite"></p>
+    <p class="muted">Når koden er lagret, kan du sende denne adressen privat til familien: <a href="./familiekode.html">Åpne familievisningen 🌳</a>. Du kan bytte kode senere. Da slutter gamle kodeøkter å fungere.</p>
+  </section>
+
   <section class="card" style="margin-bottom:18px" id="livingSelfPanel">
     <div class="eyebrow">Bare for deg</div>
     <h3>Min profil 🌱</h3>
@@ -364,6 +378,25 @@ $("privateBranchForm").addEventListener("submit",async event=>{
   button.disabled=false;
 });
 
+
+$("setFamilyCodeForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(profile?.rolle!=="administrator"||profile?.status!=="aktiv")return;
+  const btn=e.target.querySelector("button"),code=$("newFamilyCode").value.trim();
+  btn.disabled=true;
+  notice("familyCodeAdminStatus","Lagrer familiepassordet …");
+  const {data,error}=await db.functions.invoke("familie-kodeles",{body:{action:"set",code}});
+  if(error||!data?.ok){
+    let message=data?.error||"Kunne ikke lagre familiepassordet.";
+    if(error?.context?.json){try{const details=await error.context.json();if(details?.error)message=details.error}catch{}}
+    notice("familyCodeAdminStatus",message,true);
+  }else{
+    $("newFamilyCode").value="";
+    notice("familyCodeAdminStatus","Familiepassordet er lagret! Del det privat med familien, sammen med lenken under.");
+  }
+  btn.disabled=false;
+});
+
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
@@ -375,6 +408,7 @@ async function updateState(){
  if(p?.status==="sperret"){show("join");hide("private");hide("joinForm");$("joiningAs").textContent="Tilgangen er sperret. Kontakt familieadministrator.";return}
  if(p?.status!=="aktiv"){show("join");show("joinForm");hide("private");$("joiningAs").textContent="E-post bekreftet: "+(user.email||"");return}
  hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
+ if(p.rolle==="administrator")show("familyCodeAdmin");else hide("familyCodeAdmin");
  await loadOwnLivingProfile();
  await loadOwnFamilyBranch();
  await loadOwnHistoricalBridges();
