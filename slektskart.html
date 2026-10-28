@@ -102,6 +102,12 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
 #fullBack:disabled,#popupBack:disabled,#branchBackBelow:disabled{opacity:.4}
 @media(max-width:540px){#branchPopup{max-width:calc(100% - 95px);width:calc(100% - 95px);padding:11px}#branchPopup button{font-size:11px;padding:8px}#branchPopup p{font-size:11px}}
 
+
+#popupRelation,#selectedRelation{font-weight:800!important;color:#1d6944!important;font-size:14px!important;margin:5px 0 3px!important;line-height:1.4}
+#popupTrace,#selectedTrace{font-size:11.5px!important;line-height:1.45!important;color:#5c7566!important;overflow-wrap:anywhere;max-height:95px;overflow-y:auto}
+#selectedRelation{font-size:17px!important}
+#popupTrace{max-height:88px}
+
 </style>
 </head>
 <body>
@@ -185,6 +191,8 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
     <h3 id="popupPerson"></h3>
     <button id="popupExit" type="button" aria-label="Lukk personvalg">✕</button>
    </div>
+   <p id="popupRelation"></p>
+   <p id="popupTrace"></p>
    <p id="popupChildren"></p>
    <div class="popupActions">
     <button id="popupDescendants" type="button">🌿 Barn og etterkommere</button>
@@ -204,6 +212,8 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
  <p id="status" aria-live="polite"></p>
  <section id="selected" class="hidden" aria-live="polite">
   <strong id="selectedName"></strong>
+  <p id="selectedRelation"></p>
+  <p id="selectedTrace"></p>
   <div class="muted" id="selectedMeta"></div>
   <div class="row actions"><button id="openProfile" type="button">Åpne personprofil</button><button id="descendPerson" type="button">🌿 Vis barn og etterkommere</button><button id="ancestorsPerson" type="button" class="secondary">↑ Forfedre</button><button id="focusPerson" type="button" class="secondary">↔ Hele slekta</button><button id="branchBackBelow" type="button" class="secondary" disabled>← Tilbake</button></div>
  </section>
@@ -221,6 +231,7 @@ const NS="http://www.w3.org/2000/svg";
 let account=null,people=new Map(),links=[],mine=null,focused=null,mode="family";
 let chart={width:1000,height:600,scale:1},selected=null;
 const displayRoles={mor:"Mor",far:"Far",mormor:"Mormor",morfar:"Morfar",farmor:"Farmor",farfar:"Farfar"};
+const roleGenders={mor:"kvinne",far:"mann",mormor:"kvinne",morfar:"mann",farmor:"kvinne",farfar:"mann"};
 function svgEl(tag,attrs){
   const el=document.createElementNS(NS,tag);
   for(const [key,value] of Object.entries(attrs||{}))el.setAttribute(key,String(value));
@@ -237,18 +248,23 @@ function connect(from,to,confidence,label){
 }
 function rebuildGraph(history,ties,self,relatives,bridges){
   people=new Map();links=[];mine=null;
-  for(const p of history)addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,kind:"historical",dbid:p.id});
+  for(const p of history)addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,gender:p.kjonn||null,kind:"historical",dbid:p.id});
   for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
   if(!self)return;
   mine="me";
   addNode({id:mine,name:self.navn,born:self.fodt_dato?Number(self.fodt_dato.slice(0,4)):null,kind:"self"});
   const aliases=new Map();
-  for(const b of bridges)if(b.kobling==="samme_person"&&people.has("h:"+b.historisk_person_id))aliases.set(b.relasjon,"h:"+b.historisk_person_id);
+  for(const b of bridges)if(b.kobling==="samme_person"&&people.has("h:"+b.historisk_person_id)){
+   const id="h:"+b.historisk_person_id;
+   aliases.set(b.relasjon,id);
+   if(!people.get(id).gender)people.get(id).gender=roleGenders[b.relasjon]||null;
+   if(!people.get(id).slot)people.get(id).slot=b.relasjon;
+  }
   for(const [slot,label] of Object.entries(displayRoles)){
     const r=relatives.find(x=>x.relasjon===slot);
     const name=r?.navn?.trim()||"Ukjent "+label.toLocaleLowerCase("nb");
     if(aliases.has(slot))continue;
-    addNode({id:"p:"+slot,name,kind:"private",label,slot});
+    addNode({id:"p:"+slot,name,kind:"private",label,slot,gender:roleGenders[slot]});
   }
   const roleId=slot=>aliases.get(slot)||"p:"+slot;
   connect(roleId("mor"),mine,"familieopplysning");
@@ -576,6 +592,98 @@ function render(){
 
 let immersive=false,lastMapLayout=null;
 
+
+/* Korrekt slektskapsbetegnelse kommer fra registrerte forelder–barn-forbindelser.
+   Vi gjetter aldri historisk kjønn ut fra et fornavn. */
+function ancestorPaths(start,direction){
+ const result=new Map(),queue=[{id:start,path:[start],links:[]}];
+ result.set(start,{depth:0,path:[start],links:[]});
+ for(let i=0;i<queue.length;i++){
+  const current=queue[i];
+  for(const edge of links){
+   const other=direction==="up"?(edge.to===current.id?edge.from:null):
+     (edge.from===current.id?edge.to:null);
+   if(!other||!people.has(other)||result.has(other))continue;
+   const path=[...current.path,other],edgePath=[...current.links,edge];
+   const record={depth:path.length-1,path,links:edgePath};
+   result.set(other,record);queue.push({id:other,path,links:edgePath});
+  }
+ }
+ return result;
+}
+function ancestorTitle(depth,gender,slot){
+ if(depth===0)return "Dette er deg 🌱";
+ if(depth===1)return gender==="mann"?"Dette er faren din":gender==="kvinne"?"Dette er moren din":"Dette er en av foreldrene dine";
+ if(depth===2){
+  const roles={mormor:"Dette er mormoren din",morfar:"Dette er morfaren din",farmor:"Dette er farmoren din",farfar:"Dette er farfaren din"};
+  if(roles[slot])return roles[slot];
+  return gender==="mann"?"Dette er bestefaren din":gender==="kvinne"?"Dette er bestemoren din":"Dette er en av besteforeldrene dine";
+ }
+ const base=gender==="mann"?"oldefar":gender==="kvinne"?"oldemor":"oldeforelder";
+ const tippCount=depth-3;
+ const prefix=tippCount===0?"":tippCount===1?"tipp":"tipp-".repeat(tippCount);
+ return "Dette er din "+prefix+base;
+}
+function descendantTitle(depth){
+ if(depth===1)return "Dette er barnet ditt";
+ if(depth===2)return "Dette er barnebarnet ditt";
+ if(depth===3)return "Dette er oldebarnet ditt";
+ return "Dette er en etterkommer "+depth+" generasjoner etter deg";
+}
+function relationshipToMe(id){
+ if(!mine||!people.has(mine))return {title:"Slektskapsgrad ikke tilgjengelig",detail:"Du trenger en egen privat profil som er knyttet til slektstreet."};
+ const n=people.get(id);if(!n)return {title:"Ukjent slektning",detail:""};
+ if(id===mine)return {title:"Dette er deg 🌱",detail:"Utgangspunktet for slektstreet ditt."};
+ const asc=ancestorPaths(mine,"up"),a=asc.get(id);
+ if(a){
+  const uncertain=a.links.filter(edge=>edge.confidence==="usikker").length;
+  const trace=a.path.map(i=>i===mine?"Deg":people.get(i)?.name||"Ukjent").join(" → ");
+  return {
+   title:ancestorTitle(a.depth,n.gender,n.slot),
+   detail:a.depth+" generasjoner bakover · "+(uncertain?"Inneholder "+uncertain+" usikre koblinger. ":"Basert på registrerte familieforbindelser."),
+   trace:"Slektsveien: "+trace,
+   kind:"ancestor"
+  };
+ }
+ const child=ancestorPaths(mine,"down").get(id);
+ if(child)return {
+  title:descendantTitle(child.depth),
+  detail:child.depth+" generasjoner etter deg, ut fra registrerte koblinger.",
+  trace:"Slektsveien: "+child.path.map(i=>i===mine?"Deg":people.get(i)?.name||"Ukjent").join(" → "),
+  kind:"descendant"
+ };
+ const theirs=ancestorPaths(id,"up");
+ let common=null;
+ for(const [ancestor,meInfo] of asc){
+  const other=theirs.get(ancestor);
+  if(!other)continue;
+  const distance=meInfo.depth+other.depth;
+  if(!common||distance<common.distance)common={distance,ancestor,meInfo,other};
+ }
+ if(common){
+  const shared=people.get(common.ancestor)?.name||"en eldre slektning";
+  return {
+   title:"Dette er en slektning i en sidegren",
+   detail:"Dere har en registrert felles forfar eller formor: "+shared+".",
+   trace:"Forbindelsen går gjennom "+common.meInfo.depth+" ledd fra deg og "+common.other.depth+" ledd fra denne personen.",
+   kind:"side"
+  };
+ }
+ return {
+  title:"Slektskapet til deg er ikke avklart ennå",
+  detail:"Personen finnes i familiearkivet, men mangler en sammenhengende registrert slektsvei til deg.",
+  trace:"Slektskapsbetegnelse blir tilgjengelig når forbindelsene er registrert.",
+  kind:"unlinked"
+ };
+}
+function displayRelationship(id){
+ const rel=relationshipToMe(id);
+ $("popupRelation").textContent=rel.title;
+ $("popupTrace").textContent=rel.detail+(rel.trace?" "+rel.trace:"");
+ $("selectedRelation").textContent=rel.title;
+ $("selectedTrace").textContent=rel.detail+(rel.trace?" "+rel.trace:"");
+}
+
 let branchHistory=[];
 function childIds(id){
  return [...new Set(links.filter(e=>e.from===id&&people.has(e.to)).map(e=>e.to))];
@@ -594,6 +702,7 @@ function showBranchPopup(id){
  const n=people.get(id);
  if(!n)return;
  $("popupPerson").textContent=n.name;
+ displayRelationship(id);
  const children=childIds(id);
  const count=descendantIds(id).size-1;
  const plural=children.length===1?"registrert barn":"registrerte barn";
@@ -733,6 +842,7 @@ function choose(id,scrollToDetails=true){
  const n=people.get(id);
  $("selected").classList.remove("hidden");
  $("selectedName").textContent=n.name;
+ displayRelationship(id);
  showBranchPopup(id);
  $("descendPerson").disabled=childIds(id).length===0;
  $("selectedMeta").textContent=isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
@@ -812,7 +922,7 @@ async function start(){
   return;
  }
  const [h,t,s,r,b]=await Promise.all([
-  db.from("personer").select("id,navn,fodt_ar,dod_ar").order("navn"),
+  db.from("personer").select("id,navn,fodt_ar,dod_ar,kjonn").order("navn"),
   db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet"),
   db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",account.id).maybeSingle(),
   db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",account.id),
