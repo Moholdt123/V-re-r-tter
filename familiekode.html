@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#173e30">
+<title>Familiens slektstre · Våre røtter</title>
+<style>
+#branchControls label.hidden,#fullScreenBar label.hidden{display:none!important}
+
+:root{color-scheme:light;--forest:#173e30;--muted:#5f7569;--edge:#d7e5d9;--bg:#f3f7f0;--text:#20372b}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);background:var(--bg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--forest);color:#fff;padding:15px max(17px,calc((100vw - 1330px)/2));display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font:normal 26px Georgia,serif;margin:0}header p{color:#d8e7da;font-size:12px;margin:0}
+header a{margin-left:auto;color:#fff;text-decoration:none;padding:8px 12px;border:1px solid #ffffff66;border-radius:10px;font-size:13px}
+main{width:min(1360px,calc(100% - 25px));margin:20px auto 35px}
+.card{background:white;border:1px solid var(--edge);border-radius:16px;box-shadow:0 5px 19px #254c330a;padding:17px}
+h2{font:normal clamp(25px,4vw,38px) Georgia,serif;margin:4px 0 6px}
+.muted{font-size:13px;color:var(--muted)}.hidden{display:none!important}
+button,select,input{font:inherit}button{background:var(--forest);color:white;border:0;border-radius:9px;padding:9px 13px;font-weight:700;cursor:pointer}
+button.secondary{background:#eaf3e9;color:var(--forest);border:1px solid #cadfce}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7baf87;outline-offset:2px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.searchline{display:grid;grid-template-columns:minmax(175px,1fr) auto;gap:10px;margin:13px 0}
+input[type=search]{width:100%;min-width:0;padding:12px;border-radius:10px;border:1px solid #b8cfbe;background:white}
+#matches{display:flex;flex-wrap:wrap;gap:7px;max-height:140px;overflow:auto}
+#matches button{border:1px solid var(--edge);font-weight:500;background:#f6faf5;color:var(--text);padding:7px 10px}
+#matches button:hover{background:#dfede0}
+#modeBar{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}
+#modeBar button{font-size:13px}
+#modeBar button[aria-pressed=true]{background:var(--forest);color:#fff}
+#modeBar button[aria-pressed=false]{background:#eff6ed;color:var(--forest)}
+#treeWrap{position:relative;border:1px solid #d8e8db;border-radius:15px;background-color:#fbfdfb;background-image:radial-gradient(#dbeadd 1px,transparent 1px);background-size:19px 19px;overflow:hidden}
+#treePort{width:100%;height:min(67vh,740px);min-height:390px;overflow:auto;touch-action:none;overscroll-behavior:contain;position:relative}
+#treePort svg{display:block;margin:auto;max-width:none;user-select:none}
+#mapControls{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;background:#fffe;padding:5px;border-radius:12px;border:1px solid var(--edge)}
+#mapControls button{padding:8px 11px}
+#emptyOverlay{padding:50px 14px;text-align:center;color:var(--muted)}
+#selected{margin-top:13px;padding:14px;border:1px solid var(--edge);border-radius:13px;background:#f8fbf7}
+#selected strong{font-size:18px}#selected .actions{margin-top:10px}
+details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.dot{width:13px;height:13px;border:1px solid #90bb96;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:4px}
+.dot.private{background:#d8ecdc}.dot.old{background:#fff}
+#status{min-height:20px;color:var(--muted);font-size:13px}
+@media(max-width:620px){
+ main{width:calc(100% - 16px);margin:10px auto}.card{padding:12px}
+ header{padding:12px 15px}header h1{font-size:22px}header a{font-size:12px}
+ #treePort{height:63vh;min-height:380px}
+ #mapControls{top:6px;right:6px}#mapControls button{padding:7px 9px;font-size:12px}
+ .searchline{grid-template-columns:minmax(100px,1fr) auto}
+}
+
+#branchControls{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin:9px 0 14px}
+#branchControls label{font-size:13px;font-weight:700;color:var(--forest);display:grid;gap:5px}
+#branchControls select{background:#fff;border:1px solid #bdcfbe;border-radius:9px;padding:9px 12px;min-width:142px;color:var(--forest)}
+#branchControls select:focus-visible{outline:3px solid #8eba9a;outline-offset:2px}
+#treePort svg path[data-from]{stroke-linejoin:round}
+#branchControls .hint{font-size:12px;color:var(--muted);flex:1;min-width:160px}
+.branchKey{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.branchChip{display:inline-block;width:14px;height:14px;border-radius:4px}
+.branchChip.m{background:#d9edf4;border:1px solid #81b2c4}
+.branchChip.f{background:#f7eacf;border:1px solid #d1af72}
+#treePort{background-image:radial-gradient(#dce9dd 1px,transparent 1px)}
+
+
+/* Fullskjerm utforsking: hele visningsflaten brukes, selve slektskartet får beholde størrelsen. */
+body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
+#fullScreenBar{display:none}
+#treeWrap.immersive{position:fixed!important;inset:0!important;width:100vw;height:100dvh;max-width:none;max-height:none;z-index:9999;border:0;border-radius:0;box-shadow:none;background:#f5faf6;display:flex;flex-direction:column}
+#treeWrap.immersive #fullScreenBar{display:flex;flex-direction:column;gap:9px;flex:0 0 auto;background:#f9fcf8;border-bottom:1px solid #c6daca;padding:calc(env(safe-area-inset-top,0px) + 9px) 12px 10px;box-shadow:0 2px 12px #183d2916;z-index:4}
+#fullScreenBar .fullRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#fullScreenBar .fullRow strong{font-size:15px;color:var(--forest);margin-right:auto}
+#fullScreenBar button{font-size:12px;padding:9px 10px;white-space:nowrap}
+#fullScreenBar select{font-size:13px;border:1px solid #c4dbc9;border-radius:8px;color:var(--forest);padding:9px 8px;background:#fff;min-width:0;flex:1}
+#fullScreenBar label{font-size:12px;min-width:0;flex:1;display:flex;gap:4px;align-items:center;color:var(--forest);font-weight:600}
+#fullScreenBar label select{width:100%}
+#treeWrap.immersive #treePort{height:auto!important;min-height:0;max-height:none;flex:1 1 auto;width:100%;touch-action:none;overscroll-behavior:contain}
+#treeWrap.immersive #mapControls{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);right:12px}
+#treeWrap.immersive #zoomFit{display:none}
+#treeWrap.immersive #mapControls button{font-size:16px;padding:12px 16px}
+@media (max-width:540px){
+ #fullScreenBar .fullRow strong{font-size:14px}
+ #fullScreenBar button{padding:8px}
+ #fullScreenBar label{flex:1}
+ #treeWrap.immersive #mapControls button{padding:12px 17px}
+}
+
+
+/* Et klikkbart familiegren-kort inne i kartet, også i fullskjerm. */
+#branchPopup{position:absolute;z-index:5;left:12px;bottom:12px;max-width:min(430px,calc(100% - 116px));width:calc(100% - 116px);background:#fffffff5;border:1px solid #93bba3;border-radius:15px;padding:13px;box-shadow:0 10px 30px #183d2927;backdrop-filter:blur(9px)}
+#branchPopup.hidden{display:none}
+#branchPopup h3{font-family:system-ui;font-size:15px;font-weight:750;margin:0 0 4px;line-height:1.35}
+#branchPopup p{margin:2px 0 9px;font-size:12px;color:#496b58}
+#branchPopup .popupActions{display:flex;gap:6px;flex-wrap:wrap}
+#branchPopup button{font-size:12px;padding:8px 10px}
+#branchPopup #popupExit{background:transparent;color:#355e43;border:1px solid #b9d4c0;margin-left:auto}
+#treeWrap.immersive #branchPopup{bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+#treeWrap.immersive #mapControls{bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+#branchTrailLine{font-size:12px;font-weight:650;color:#285c3d;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#selected .actions button{font-size:13px}
+#fullBack:disabled,#popupBack:disabled,#branchBackBelow:disabled{opacity:.4}
+@media(max-width:540px){#branchPopup{max-width:calc(100% - 95px);width:calc(100% - 95px);padding:11px}#branchPopup button{font-size:11px;padding:8px}#branchPopup p{font-size:11px}}
+
+
+#popupRelation,#selectedRelation{font-weight:800!important;color:#1d6944!important;font-size:14px!important;margin:5px 0 3px!important;line-height:1.4}
+#popupTrace,#selectedTrace{font-size:11.5px!important;line-height:1.45!important;color:#5c7566!important;overflow-wrap:anywhere;max-height:95px;overflow-y:auto}
+#selectedRelation{font-size:17px!important}
+#popupTrace{max-height:88px}
+
+
+#startPicker{border:1px solid #b7d4bd;background:linear-gradient(130deg,#f1f9ef,#fffdf4);border-radius:16px;padding:clamp(16px,3vw,25px);margin:15px 0}
+#startPicker h3{font:normal 24px Georgia,serif;color:var(--forest);margin:0 0 6px}
+#startPicker p{margin:4px 0 14px}
+#startChoices{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:10px}
+#startChoices button{border:1px solid #accfb3;background:#fff;color:var(--forest);padding:14px;text-align:left;min-height:80px;display:block}
+#startChoices button:hover,#startChoices button:focus-visible{background:#e9f5e8}
+#startChoices button strong{display:block;font-size:14px}
+#startChoices button small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:5px}
+#chooseAnother{margin:10px 0}
+@media(max-width:600px){#startChoices{grid-template-columns:1fr}}
+
+
+/* Privat familiegren: tydelig forskjell mellom familiekode og personlig innlogging. */
+#privateSelfHint{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:16px 18px;margin:12px 0 17px;background:#edf7ef;border:1px solid #bad9bf;border-radius:14px}
+#privateSelfHint strong{font-size:16px;color:var(--forest)}
+#privateSelfHint p{margin:5px 0 0;font-size:13px;color:var(--muted);max-width:650px}
+#privateSelfHint a{display:inline-block;padding:11px 16px;background:var(--forest);border-radius:10px;color:#fff;text-decoration:none;font-size:13px;font-weight:750}
+#privateSelfHint a:hover{background:#245b43}
+#privateSelfHint a:focus-visible{outline:3px solid #83a98b;outline-offset:2px}
+#matches .private-search-tip{padding:11px 13px;border:1px solid #c7ddc8;border-radius:10px;background:#f1f9f0;color:var(--forest);width:100%;font-size:13px}
+#matches .private-search-tip a{font-weight:750;color:var(--forest);text-underline-offset:3px}
+
+
+header a.brand{margin-left:0;padding:0;border:0;display:flex;align-items:center;gap:12px;min-width:0;color:#fff;text-decoration:none}
+header a.brand:hover{opacity:.94}
+header .brand-icon{font-size:29px;flex-shrink:0}
+header .brand-text{display:block;min-width:0}
+header .brand-text h1{margin:0}
+header .brand-text p,header .brand-text small{display:block}
+
+
+/* Enkel startside når familiekoden er godkjent */
+#treeWelcome{background:#f0f7ef;border:1px solid #b7d4b9;border-radius:17px;padding:clamp(17px,3vw,26px);margin:13px 0}
+#treeWelcome h3{font:normal clamp(24px,4vw,32px) Georgia,serif;margin:0 0 8px;color:var(--forest)}
+#treeWelcome p{margin:0 0 15px}
+#openWholeMap{display:flex;flex-direction:column;gap:4px;text-align:left;width:100%;padding:18px 21px;border-radius:12px;font-size:19px}
+#openWholeMap span{font-size:13px;font-weight:400;color:#d9eadd}
+#treeWelcome .directHint{font-size:12px;color:var(--muted);margin:9px 0 0}
+#startPicker{background:#fff;border-color:#d4e4d5;padding:0;border:0;margin:16px 0}
+#startPicker h3{font-size:23px}
+#startPicker p{margin:3px 0 11px}
+#startChoices{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
+#startChoices button{min-height:88px;padding:13px}
+#historicalFindRow{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-top:15px}
+#historicalFindRow label{flex:1;min-width:205px;font-size:13px;font-weight:750;color:var(--forest)}
+#historicalFindRow select{display:block;width:100%;margin-top:5px;min-height:47px;padding:11px;border:1px solid #b8cfbe;border-radius:10px;background:#fff;color:var(--text)}
+#historicalFindRow button{min-height:47px}
+#privateSelfHint{margin:16px 0;background:#f6faf6}
+#privateSelfHint p{max-width:760px}
+#chooseAnother{margin:7px 0 13px}
+#archiveHelp{padding:10px 14px;background:#f5f9f4;border:1px solid #d4e5d6;border-radius:10px;margin:11px 0;font-size:13px}
+@media(max-width:620px){#startChoices{grid-template-columns:1fr}#historicalFindRow{display:block}#historicalFindRow button{width:100%;margin-top:10px}}
+
+</style>
+</head>
+<body>
+<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Familiekode · Historisk slektstre</p></span></a><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
+<main>
+<section class="card" id="loading" style="max-width:560px;margin:25px auto;padding:25px">
+  <div style="font-size:45px;text-align:center">🌳</div>
+  <h2 style="text-align:center">Velkommen til Våre røtter</h2>
+  <p class="muted" style="text-align:center">Familiens historiske slektstre. Skriv inn familiekoden du fikk av den som inviterte deg.</p>
+  <form id="codeForm">
+    <label for="familyCode" style="display:block;font-weight:700;margin-bottom:6px">Familiekode</label>
+    <input id="familyCode" type="password" minlength="6" maxlength="25" placeholder="Skriv familiens kode" autocomplete="off" required style="width:100%;padding:13px;border:1px solid #acc6b3;border-radius:10px">
+    <button type="submit" style="display:block;width:100%;padding:14px;margin-top:14px">🌳 Åpne slektstreet</button>
+  </form>
+  <p class="muted" id="loadingMsg" aria-live="polite">Bare historiske slektsopplysninger vises med familiekoden.</p>
+  <p class="muted">Vil du legge inn historier eller redigere opplysninger? Da trenger du personlig innlogging via <a href="./familie.html">familierommet</a>.</p>
+</section>
+<section id="app" class="hidden">
+<div class="card">
+ <h2>Familiens slektstre 🌳</h2>
+ <p class="muted">Du er inne i det historiske slektsarkivet. Velg hele kartet eller start hos en person du kjenner til. Opplysninger om nålevende personer er fortsatt private.</p>
+ <section id="treeWelcome" aria-label="Velg hvordan du vil utforske">
+  <h3>Hva vil du se?</h3>
+  <p>Du trenger ikke vite hvor i slekta du hører til for å begynne.</p>
+  <button id="openWholeMap" type="button">🌳 Åpne hele det historiske slektstreet
+   <span>Vis alle registrerte historiske personer. Dra rundt og zoom inn for å lese navnene.</span>
+  </button>
+  <p class="directHint">Kartet er stort. «Oversikt» viser hele kartet samlet; søk eller velg en person for et mer lesbart utsnitt.</p>
+ </section>
+ <section id="startPicker" aria-label="Velg historisk familiegren" class="hidden">
+   <h3>🌿 Eller start med en familiegren</h3>
+   <p class="muted">Her er noen tydelige innganger til den registrerte slekta. Navnene hentes fra det historiske arkivet etter at familiekoden er godkjent.</p>
+   <div id="startChoices" aria-label="Familiegrener du kan utforske"></div>
+   <div id="historicalFindRow">
+    <label for="personDirectory">Finn en bestemt historisk person
+      <select id="personDirectory" aria-label="Velg historisk person alfabetisk">
+       <option value="">Velg navn fra listen …</option>
+      </select>
+    </label>
+    <button type="button" id="openDirectoryPerson">Vis denne familiegrenen</button>
+   </div>
+ </section>
+ <div class="searchline">
+   <input id="search" type="search" placeholder="Eller søk etter navn …" aria-label="Søk blant historiske personer" autocomplete="off">
+   <button id="showMine" type="button">🌳 Til start</button>
+ </div>
+ <div id="matches" aria-live="polite"></div>
+ <p id="historicalFocusLabel" class="muted" aria-live="polite">Velg en historisk person eller åpne hele kartet.</p>
+ <button id="chooseAnother" type="button" class="secondary hidden">↩ Til kartmenyen</button>
+ <p id="archiveHelp" class="muted hidden">Hele det historiske arkivet er nå åpnet. Kartet er stort: bruk zoom eller «Oversikt», eller søk etter en person for å følge én slektsgren.</p>
+ <aside id="privateSelfHint" aria-label="Finn ditt eget private slektstre">
+  <div>
+   <strong>🌱 Vil du finne deg selv?</strong>
+   <p>Familiepassordet viser kun historiske personer. Bruk personlig innlogging for din private familiegren.</p>
+  </div>
+  <a href="./familie.html">🔐 Personlig innlogging</a>
+ </aside>
+ <div id="treeExperience" class="hidden">
+ <div id="modeBar" role="group" aria-label="Visning av slektskart">
+   <button data-mode="family" aria-pressed="true">Slekt rundt person</button>
+   <button data-mode="ancestors" aria-pressed="false">Forfedre</button>
+   <button data-mode="descendants" aria-pressed="false">Etterkommere</button>
+   <button data-mode="archive" aria-pressed="false">Alle historiske</button>
+ </div>
+
+ <div id="branchControls">
+  <label for="branchSide" class="hidden">Privat inndeling
+    <select id="branchSide">
+     <option value="both">🌿 Begge sider</option>
+     <option value="maternal">💙 Mors side</option>
+     <option value="paternal">💛 Fars side</option>
+    </select>
+  </label>
+  <label for="generationLimit">Hvor langt tilbake?
+    <select id="generationLimit">
+     <option value="2">2 generasjoner</option>
+     <option value="3">3 generasjoner</option>
+     <option value="5">5 generasjoner</option>
+     <option value="all" selected>Alle generasjoner</option>
+    </select>
+  </label>
+    <label for="mapSpacing">Avstand mellom personene
+    <select id="mapSpacing">
+      <option value="normal">God avstand</option>
+      <option value="airy">Veldig luftig</option>
+      <option value="extra" selected>Ekstra stor avstand</option>
+    </select>
+  </label>
+  <span class="hint">Velg en historisk person og utforsk den grenen. «Vis alt» åpner fullskjerm med zoom, og «Alle historiske» viser også personer uten felles forbindelse.</span>
+ </div>
+
+ <div class="row" style="justify-content:space-between;margin-bottom:10px">
+  <span id="treeCount" class="muted"></span>
+  <div class="legend"><span>🌳 Historisk slekt</span><span>– – Usikker kobling</span></div>
+ </div>
+ <div id="treeWrap">
+
+  <div id="fullScreenBar" aria-label="Kontroller for slektskart i fullskjerm">
+   <div class="fullRow">
+    <strong>🌳 Hele slektstreet</strong>
+    <button id="fullBack" type="button" class="secondary" disabled>← Tilbake</button>
+    <button id="fullHome" type="button" class="secondary">🌳 Til start</button>
+    <button id="fullOverview" type="button" class="secondary">Oversikt</button>
+    <button id="fullClose" type="button">✕ Lukk</button>
+   </div>
+   <div id="branchTrailLine" role="status" aria-live="polite">Trykk på en person for å følge en familiegren</div>
+   <div class="fullRow">
+    <label for="fullBranchSide" class="hidden">Privat inndeling
+      <select id="fullBranchSide">
+       <option value="both">Begge sider</option><option value="maternal">Mors side</option><option value="paternal">Fars side</option>
+      </select>
+    </label>
+    <label for="fullGenerationLimit">Generasjoner
+      <select id="fullGenerationLimit">
+       <option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="all">Alle</option>
+      </select>
+    </label>
+   </div>
+  </div>
+
+
+  <aside id="branchPopup" class="hidden" aria-live="polite" aria-label="Utforsk valgt slektning">
+   <div class="row space">
+    <h3 id="popupPerson"></h3>
+    <button id="popupExit" type="button" aria-label="Lukk personvalg">✕</button>
+   </div>
+   <p id="popupRelation"></p>
+   <p id="popupTrace"></p>
+   <p id="popupChildren"></p>
+   <div class="popupActions">
+    <button id="popupDescendants" type="button">🌿 Barn og etterkommere</button>
+    <button id="popupAncestors" type="button" class="secondary">↑ Forfedre</button>
+    <button id="popupFamily" type="button" class="secondary">↔ Hele slekta</button>
+    <button id="popupBack" type="button" class="secondary">← Tilbake</button>
+   </div>
+  </aside>
+
+  <div id="mapControls" aria-label="Kartkontroller">
+   <button id="zoomOut" type="button" class="secondary" aria-label="Zoom ut">−</button>
+   <button id="zoomIn" type="button" class="secondary" aria-label="Zoom inn">+</button>
+   <button id="zoomFit" type="button" class="secondary">Vis alt</button>
+  </div>
+  <div id="treePort"><p id="emptyOverlay">Henter slektstreet …</p></div>
+ </div>
+ <p id="status" aria-live="polite"></p>
+ <section id="selected" class="hidden" aria-live="polite">
+  <strong id="selectedName"></strong>
+  <p id="selectedRelation"></p>
+  <p id="selectedTrace"></p>
+  <div class="muted" id="selectedMeta"></div>
+  <div class="row actions"><button id="openProfile" type="button" class="hidden" disabled>Kun innloggede kan se personprofil</button><button id="descendPerson" type="button">🌿 Vis barn og etterkommere</button><button id="ancestorsPerson" type="button" class="secondary">↑ Forfedre</button><button id="focusPerson" type="button" class="secondary">↔ Hele slekta</button><button id="branchBackBelow" type="button" class="secondary" disabled>← Tilbake</button></div>
+ </section>
+ <details><summary>Hvordan bruker jeg kartet?</summary>
+   <p class="muted">På PC: Bruk musehjulet direkte over kartet for å zoome inn og ut, eller dra med musen for å flytte deg rundt. På mobil: Dra med én finger eller knip med to fingre for å zoome. Trykk «Vis alt» for å åpne fullskjermkartet i lesbar størrelse. Trykk på en gammel slektning og velg «Barn og etterkommere» for å åpne grenene til barna, barnebarna og videre. Bruk «Tilbake» for å gå til forrige gren. Der kan du dra langt for å utforske, bruke «Oversikt» for en miniatyrvisning og «Til start» for å finne tilbake. «Slekt rundt person» inkluderer registrerte slektslinjer; «Forfedre» viser bare foreldre bakover; «Etterkommere» følger barn videre. Familiekoden gir bare tilgang til avdøde historiske personer. Noen gamle koblinger er usikre.</p>
+ </details>
+ </div>
+</div>
+</section>
+</main>
+<script>
+const ENDPOINT="https://wtswwjancxiofkjmulvl.supabase.co/functions/v1/familie-kodeles";
+const PUBLIC_KEY="sb_publishable_UbN2Fmn7U4J8HRaPZBTxNg_GVIaMm4g";
+const TOKEN_KEY="vaare-roetter-historisk-tilgang";
+async function api(action,extra={}){
+  let res;
+  try{
+    res=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","apikey":PUBLIC_KEY},body:JSON.stringify({action,...extra}),cache:"no-store"});
+  }catch{return {ok:false,error:"Kunne ikke kontakte familiearkivet. Sjekk nettet."}}
+  let data;try{data=await res.json()}catch{return {ok:false,error:"Uventet svar fra serveren."}}
+  return {...data,ok:res.ok&&data.ok===true};
+}
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+let people=new Map(),links=[],mine=null,focused=null,homePerson=null,mode="ancestors";
+let chart={width:1000,height:600,scale:1},selected=null;
+const displayRoles={mor:"Mor",far:"Far",mormor:"Mormor",morfar:"Morfar",farmor:"Farmor",farfar:"Farfar"};
+const roleGenders={mor:"kvinne",far:"mann",mormor:"kvinne",morfar:"mann",farmor:"kvinne",farfar:"mann"};
+function svgEl(tag,attrs){
+  const el=document.createElementNS(NS,tag);
+  for(const [key,value] of Object.entries(attrs||{}))el.setAttribute(key,String(value));
+  return el;
+}
+function escapeSearch(s){return String(s||"").toLocaleLowerCase("nb").trim()}
+function isPrivate(n){return n.kind!=="historical"}
+function titleFor(n){return n.name||n.label||"Ukjent person"}
+function addNode(node){people.set(node.id,node)}
+function connect(from,to,confidence,label){
+ if(!people.has(from)||!people.has(to)||from===to)return;
+ if(links.some(l=>l.from===from&&l.to===to))return;
+ links.push({from,to,confidence:confidence||"familieopplysning",label:label||"forelder_barn"});
+}
+function rebuildGraph(history,ties){
+ people=new Map();links=[];mine=null;
+ for(const p of history)if(p&&p.id&&typeof p.navn==="string")
+  addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,gender:p.kjonn||null,kind:"historical",dbid:p.id});
+ for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
+}
+function getNeighbors(id,direction){
+ const found=[];
+ for(const l of links){
+  if(direction!=="ancestors"&&l.from===id)found.push(l.to);
+  if(direction!=="descendants"&&l.to===id)found.push(l.from);
+ }
+ return found;
+}
+function reachable(start,direction){
+ const visited=new Set(),queue=[start];
+ for(let i=0;i<queue.length;i++){
+  const id=queue[i];if(visited.has(id)||!people.has(id))continue;
+  visited.add(id);
+  for(const v of getNeighbors(id,direction))if(!visited.has(v))queue.push(v);
+ }
+ return visited;
+}
+function familyMembers(){
+ if(!focused||!people.has(focused))return new Set();
+ if(mode==="archive")return new Set(people.keys());
+ if(mode==="family"){
+  const up=reachable(focused,"ancestors");
+  for(const id of reachable(focused,"descendants"))up.add(id);
+  return up;
+ }
+ return reachable(focused,mode);
+}
+function layersFor(ids){
+ const root=ids.has(focused)?focused:[...ids][0];
+ const depth=new Map([[root,0]]);
+ const q=[root];
+ for(let i=0;i<q.length;i++){
+  const id=q[i],gen=depth.get(id);
+  for(const e of links){
+   const nxt=e.from===id?{id:e.to,gen:gen+1}:e.to===id?{id:e.from,gen:gen-1}:null;
+   if(nxt&&ids.has(nxt.id)&&!depth.has(nxt.id)){depth.set(nxt.id,nxt.gen);q.push(nxt.id)}
+  }
+ }
+ // Archive mode may contain disconnected clusters. Place those together in their own bands.
+ let next=Math.max(0,...depth.values())+2;
+ for(const id of ids)if(!depth.has(id)){
+  if(depth.has(id))continue;
+  depth.set(id,next);
+  const cq=[id];for(let k=0;k<cq.length;k++){
+   const curr=cq[k],gen=depth.get(curr);
+   for(const e of links){
+    const nxt=e.from===curr?{id:e.to,gen:gen+1}:e.to===curr?{id:e.from,gen:gen-1}:null;
+    if(nxt&&ids.has(nxt.id)&&!depth.has(nxt.id)){depth.set(nxt.id,nxt.gen);cq.push(nxt.id)}
+   }
+  }
+  next=Math.max(...depth.values())+3;
+ }
+ const byLayer=new Map();
+ for(const [id,g] of depth){if(!byLayer.has(g))byLayer.set(g,[]);byLayer.get(g).push(id)}
+ for(const [g,arr] of byLayer)arr.sort((a,b)=>{
+  const pa=people.get(a),pb=people.get(b);
+  // Keep own private parents and grandparents grouped together when possible.
+  if(isPrivate(pa)!==isPrivate(pb))return isPrivate(pa)?-1:1;
+  const qa=pa.born??0,qb=pb.born??0;if(qa!==qb)return qa-qb;
+  return titleFor(pa).localeCompare(titleFor(pb),"nb");
+ });
+ return byLayer;
+}
+function nodeLabel(name){
+ const words=String(name).trim().split(/\s+/);
+ const lines=[];let line="";
+ for(const w of words){
+  const candidate=line?line+" "+w:w;
+  if(candidate.length>22&&line){lines.push(line);line=w}else line=candidate;
+ }
+ if(line)lines.push(line);
+ const result=lines.slice(0,3);
+ if(lines.length>3)result[2]=result[2].slice(0,19)+"…";
+ return result;
+}
+
+let branchSide="both",generationLimit="all",mapSpacing="extra";
+function spacingConfig(){
+ if(mapSpacing==="normal")return {nodeW:194,nodeH:84,gapX:75,gapY:135,pad:85};
+ if(mapSpacing==="airy")return {nodeW:205,nodeH:90,gapX:145,gapY:195,pad:100};
+ return {nodeW:215,nodeH:96,gapX:300,gapY:425,pad:150};
+}
+
+function rootDistances(root,blocked,ids){
+ const distances=new Map();
+ if(!ids.has(root)||!people.has(root))return distances;
+ const queue=[root];distances.set(root,0);
+ for(let i=0;i<queue.length;i++){
+  const current=queue[i],distance=distances.get(current);
+  for(const next of getNeighbors(current,"both")){
+   if(next===mine||next===blocked||!ids.has(next)||distances.has(next))continue;
+   distances.set(next,distance+1);queue.push(next);
+  }
+ }
+ return distances;
+}
+function classifyBranches(ids){
+ const mum=rootDistances("p:mor","p:far",ids),dad=rootDistances("p:far","p:mor",ids);
+ const result=new Map();
+ const maternal=new Set(["p:mor","p:mormor","p:morfar"]);
+ const paternal=new Set(["p:far","p:farmor","p:farfar"]);
+ for(const id of ids){
+  if(id===mine){result.set(id,"self");continue}
+  if(maternal.has(id)){result.set(id,"maternal");continue}
+  if(paternal.has(id)){result.set(id,"paternal");continue}
+  const m=mum.get(id)??Infinity,f=dad.get(id)??Infinity;
+  result.set(id,m<f?"maternal":f<m?"paternal":Number.isFinite(m)?"shared":"other");
+ }
+ return result;
+}
+function filterLayoutNodes(){
+ const raw=familyMembers();
+ const split=Boolean(mine&&focused===mine&&(mode==="family"||mode==="ancestors"));
+ if(!split)return {ids:raw,split:false,sideMap:new Map(),levels:layersFor(raw)};
+ const levels=layersFor(raw),sides=classifyBranches(raw),result=new Set();
+ const limit=generationLimit==="all"?Infinity:Number(generationLimit);
+ for(const [gen,list] of levels){
+  if(gen < -limit||gen>0&&focused===mine)continue;
+  for(const id of list){
+   const side=sides.get(id);
+   if(branchSide!=="both"&&side!==branchSide&&side!=="self"&&side!=="shared")continue;
+   result.add(id);
+  }
+ }
+ return {ids:result,split:true,sideMap:sides,levels};
+}
+function orderWithinBranch(arr){
+ const slotOrder={mormor:0,morfar:1,farmor:0,farfar:1,mor:0,far:0};
+ return arr.sort((a,b)=>{
+  const pa=people.get(a),pb=people.get(b);
+  const ga=pa?.slot,gb=pb?.slot;
+  const oa=ga in slotOrder?slotOrder[ga]:9,ob=gb in slotOrder?slotOrder[gb]:9;
+  if(oa!==ob)return oa-ob;
+  const age=(pa?.born??9999)-(pb?.born??9999);
+  return age||titleFor(pa).localeCompare(titleFor(pb),"nb");
+ });
+}
+
+/** Plasser etterkommere under riktig forelder, med en egen horisontal gren for hvert barn. */
+function descendantTreeLayout(ids,nodeW,nodeH,gapX,gapY,pad){
+ const root=focused;
+ const distances=new Map([[root,0]]);
+ const q=[root];
+ for(let i=0;i<q.length;i++){
+  const current=q[i],depth=distances.get(current);
+  for(const child of childIds(current)){
+   if(!ids.has(child)||distances.has(child))continue;
+   distances.set(child,depth+1);q.push(child);
+  }
+ }
+ const children=new Map([...distances.keys()].map(id=>[id,[]]));
+ // Registrerte barn kan ha to foreldre; vis barnet én gang og tegn også den andre koblingen.
+ for(const node of [...distances.keys()].filter(id=>id!==root)){
+  const candidates=links.filter(e=>e.to===node&&distances.has(e.from)&&
+    distances.get(e.from)===distances.get(node)-1)
+    .map(e=>e.from).sort((a,b)=>{
+      const na=people.get(a),nb=people.get(b);
+      return (na?.born??9999)-(nb?.born??9999)||titleFor(na).localeCompare(titleFor(nb),"nb");
+    });
+  if(candidates.length)children.get(candidates[0]).push(node);
+ }
+ const siblingSort=(a,b)=>{
+  const na=people.get(a),nb=people.get(b);
+  return (na?.born??9999)-(nb?.born??9999)||titleFor(na).localeCompare(titleFor(nb),"nb");
+ };
+ for(const group of children.values())group.sort(siblingSort);
+ const weights=new Map();
+ function size(id){
+  if(weights.has(id))return weights.get(id);
+  const kids=children.get(id)||[];
+  const value=Math.max(1,kids.reduce((total,child)=>total+size(child),0));
+  weights.set(id,value);return value;
+ }
+ const leaves=size(root),step=nodeW+gapX;
+ const width=Math.max(650,2*pad+leaves*step);
+ const loc=new Map();
+ const top=pad+45;
+ function place(id,left){
+  const count=weights.get(id);
+  loc.set(id,{x:pad+(left+(count-1)/2)*step,
+    y:top+distances.get(id)*(nodeH+gapY)});
+  let cursor=left;
+  for(const child of children.get(id)||[]){
+   place(child,cursor);cursor+=weights.get(child);
+  }
+ }
+ place(root,0);
+ const keys=[...new Set(distances.values())].sort((a,b)=>a-b);
+ const height=top+keys.length*(nodeH+gapY)+pad;
+ return {ids,split:false,sideMap:new Map(),loc,width,height,nodeW,nodeH,keys,descendantTree:true};
+}
+
+
+/* Direkte anetavle: plasser hvert foreldreslekt-ledd i en egen horisontal gren.
+   Aldri gå gjennom barn for å finne flere "forfedre" — dette er årsaken til spindelvevet. */
+function ancestryLayout(root,allowed,config){
+ const {nodeW,nodeH,gapX,gapY,pad}=config;
+ const parents=new Map(),distances=new Map([[root,0]]),queue=[root];
+ for(let index=0;index<queue.length;index++){
+  const id=queue[index],level=distances.get(id);
+  const family=links.filter(e=>e.to===id&&allowed.has(e.from))
+   .map(e=>e.from).filter((x,i,list)=>list.indexOf(x)===i);
+  family.sort((a,b)=>{
+   if(id===mine){return a==="p:mor"?-1:b==="p:mor"?1:a==="p:far"?-1:1}
+   const na=people.get(a),nb=people.get(b);
+   const genderRank=x=>x?.gender==="kvinne"?0:x?.gender==="mann"?1:2;
+   return genderRank(na)-genderRank(nb)||titleFor(na).localeCompare(titleFor(nb),"nb");
+  });
+  parents.set(id,family);
+  for(const p of family)if(!distances.has(p)){
+    distances.set(p,level+1);
+    queue.push(p);
+  }
+ }
+ const widths=new Map(),visiting=new Set();
+ function weight(id){
+  if(widths.has(id))return widths.get(id);
+  if(visiting.has(id))return 1;
+  visiting.add(id);
+  const family=parents.get(id)||[];
+  const result=Math.max(1,family.reduce((sum,p)=>sum+weight(p),0));
+  visiting.delete(id);widths.set(id,result);return result;
+ }
+ const rootWeight=weight(root);
+ const loc=new Map(),sideMap=new Map();
+ const rootParents=parents.get(root)||[];
+ const sideFor=id=>id===rootParents[0]?"maternal":id===rootParents[1]?"paternal":null;
+ const maxDepth=Math.max(0,...distances.values());
+ const stride=nodeW+gapX;
+ const offset=pad+gapX*0.5;
+ function place(id,left,side){
+  if(loc.has(id))return;  // En reell felles stamfar merkes særskilt, aldri dupliseres som ekstra person.
+  const width=widths.get(id)||1,depth=distances.get(id)||0;
+  const x=offset+(left+(width-1)/2)*stride;
+  const y=pad+65+(maxDepth-depth)*(nodeH+gapY);
+  loc.set(id,{x,y});
+  sideMap.set(id,sideFor(id)||side||(id===root?"self":"other"));
+  let next=left;
+  for(const p of parents.get(id)||[]){
+    const childSide=sideFor(p)||side||(id===root?(p==="p:mor"?"maternal":p==="p:far"?"paternal":"other"):"other");
+    place(p,next,childSide);
+    next+=widths.get(p)||1;
+  }
+ }
+ place(root,0,"self");
+ const keys=Array.from({length:maxDepth+1},(_,i)=>i);
+ const width=Math.max(650,2*pad+rootWeight*stride+gapX);
+ const height=pad*2+130+(maxDepth+1)*(nodeH+gapY);
+ const panels=[];
+ if(rootParents.length>=2){
+  for(const [side,title,fill,stroke,color] of [
+    ["maternal","FORELDREGREN 1","#eef6f9","#b8d7e4","#31728d"],
+    ["paternal","FORELDREGREN 2","#fcf6eb","#dfc99e","#8b6a31"]
+  ]){
+   const coords=[...loc].filter(([id])=>sideMap.get(id)===side).map(([,pos])=>pos);
+   if(!coords.length)continue;
+   const left=Math.max(20,Math.min(...coords.map(p=>p.x))-pad*0.4);
+   const right=Math.max(...coords.map(p=>p.x+nodeW))+pad*0.4;
+   panels.push({x:left,w:Math.max(300,right-left),title,fill,stroke,color,count:coords.length});
+  }
+ }
+ return {
+  ids:new Set(loc.keys()),split:rootParents.length>=2,sideMap,loc,
+  width,height,panels,
+  nodeW,nodeH,keys,ancestryTree:true,root
+ };
+}
+function centeredFamilyLayout(root,state,config){
+ const ancestors=reachable(root,"ancestors"),children=reachable(root,"descendants");
+ const older=ancestryLayout(root,ancestors,config);
+ const younger=descendantTreeLayout(children,config.nodeW,config.nodeH,config.gapX,config.gapY,config.pad);
+ const rootOld=older.loc.get(root),rootYoung=younger.loc.get(root);
+ if(!rootOld||!rootYoung)return older;
+ const loc=new Map(older.loc);
+ const yOffset=rootOld.y-rootYoung.y;
+ for(const [id,at] of younger.loc){
+  if(id===root)continue;
+  loc.set(id,{x:at.x-rootYoung.x+rootOld.x,y:at.y+yOffset});
+ }
+ const minX=Math.min(...[...loc.values()].map(p=>p.x));
+ const dx=minX<config.pad?config.pad-minX:0;
+ for(const p of loc.values())p.x+=dx;
+ const width=Math.max(650,...[...loc.values()].map(p=>p.x+config.nodeW+config.pad));
+ const height=Math.max(...[...loc.values()].map(p=>p.y+config.nodeH+config.pad));
+ return {...older,ids:new Set(loc.keys()),loc,width,height,split:false,sideMap:new Map(),keys:[...new Set([...loc.values()].map(p=>Math.round(p.y/(config.nodeH+config.gapY))))].sort((a,b)=>a-b),ancestryTree:false,combinedTree:true,root};
+}
+
+function computeMapLayout(){
+ const state=filterLayoutNodes(),{ids,split,sideMap,levels}=state;
+ const config=spacingConfig();
+ const {nodeW,nodeH,gapX,gapY,pad}=config;
+ // Retningsbestemte slektsledd hindrer "innavl-illusjonen" i helhetskartet.
+ if(focused&&ids.has(focused)){
+  if(mode==="descendants")return descendantTreeLayout(ids,nodeW,nodeH,gapX,gapY,pad);
+  if(mode==="ancestors"){
+   const allAncestors=reachable(focused,"ancestors");
+   const permitted=new Set([...ids].filter(id=>allAncestors.has(id)));
+   if(generationLimit!=="all"){
+    const max=Number(generationLimit),dist=new Map([[focused,0]]),queue=[focused];
+    for(let i=0;i<queue.length;i++)for(const parent of getNeighbors(queue[i],"ancestors"))
+      if(permitted.has(parent)&&!dist.has(parent)){dist.set(parent,dist.get(queue[i])+1);queue.push(parent)}
+    for(const id of permitted)if((dist.get(id)??Infinity)>max)permitted.delete(id);
+   }
+   const layout=ancestryLayout(focused,permitted,config);
+   return layout;
+  }
+  if(mode==="family")return centeredFamilyLayout(focused,state,config);
+ }
+ const keys=[...levels.keys()].filter(k=>levels.get(k).some(id=>ids.has(id))).sort((a,b)=>a-b);
+ if(!keys.length)return {...state,keys,loc:new Map(),width:650,height:400,nodeW,nodeH};
+ const loc=new Map();
+ let width,height;
+ if(split){
+  const bands=new Map();let maxM=1,maxF=1,maxShared=0;
+  for(const gen of keys){
+   const row=levels.get(gen).filter(id=>ids.has(id));
+   const groups={maternal:[],paternal:[],shared:[],self:[]};
+   for(const id of row){
+    const side=sideMap.get(id)||"shared";
+    if(side==="maternal"||side==="paternal"||side==="self")groups[side].push(id);
+    else groups.shared.push(id);
+   }
+   orderWithinBranch(groups.maternal);orderWithinBranch(groups.paternal);orderWithinBranch(groups.shared);
+   maxM=Math.max(maxM,groups.maternal.length);maxF=Math.max(maxF,groups.paternal.length);
+   maxShared=Math.max(maxShared,groups.shared.length);
+   bands.set(gen,groups);
+  }
+  const section=(count)=>Math.max(340,count*(nodeW+gapX)+80);
+  const leftW=branchSide==="paternal"?160:section(maxM),rightW=branchSide==="maternal"?160:section(maxF);
+  const middleW=maxShared?section(maxShared):180;
+  const leftX=pad,rightX=pad+leftW+middleW;
+  width=pad*2+leftW+middleW+rightW;
+  height=pad*2+keys.length*(nodeH+gapY)-gapY+55;
+  for(let row=0;row<keys.length;row++){
+   const gen=keys[row],groups=bands.get(gen),y=pad+row*(nodeH+gapY)+55;
+   function put(list,base,region){
+    const span=list.length*nodeW+(list.length-1)*gapX;
+    const left=base+(region-span)/2;
+    list.forEach((id,i)=>loc.set(id,{x:left+i*(nodeW+gapX),y}));
+   }
+   put(groups.maternal,leftX,leftW);
+   put(groups.paternal,rightX,rightW);
+   put(groups.shared,pad+leftW,middleW);
+   put(groups.self,0,width);
+  }
+  state.panels=[
+   {x:leftX,w:leftW,title:"MORS SIDE",fill:"#eef6f9",stroke:"#b8d7e4",color:"#31728d",count:[...ids].filter(id=>sideMap.get(id)==="maternal").length},
+   {x:rightX,w:rightW,title:"FARS SIDE",fill:"#fcf6eb",stroke:"#dfc99e",color:"#8b6a31",count:[...ids].filter(id=>sideMap.get(id)==="paternal").length}
+  ];
+ }else{
+  const cols=Math.max(...keys.map(k=>levels.get(k).filter(id=>ids.has(id)).length));
+  width=Math.max(650,pad*2+cols*(nodeW+gapX)-gapX);
+  height=pad*2+keys.length*(nodeH+gapY)-gapY;
+  for(let row=0;row<keys.length;row++){
+   const arr=levels.get(keys[row]).filter(id=>ids.has(id));
+   const span=arr.length*nodeW+(arr.length-1)*gapX,left=(width-span)/2;
+   arr.forEach((id,i)=>loc.set(id,{x:left+i*(nodeW+gapX),y:pad+row*(nodeH+gapY)}));
+  }
+ }
+ return {...state,keys,loc,width,height,nodeW,nodeH};
+}
+function highlightConnections(){
+ const svg=$("treePort").querySelector("svg");if(!svg)return;
+ for(const path of svg.querySelectorAll("path[data-from]")){
+  const direct=selected&&(path.getAttribute("data-from")===selected||path.getAttribute("data-to")===selected);
+  path.setAttribute("opacity",direct?"1":selected?"0.72":"0.85");
+  path.setAttribute("stroke-width",direct?"4.5":"2.8");
+ }
+}
+
+function render(){
+ const layout=computeMapLayout();
+ const {ids,split,sideMap,loc,width,height,nodeW,nodeH,keys}=layout,port=$("treePort");
+ if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
+ const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
+ if(split&&layout.panels?.length){
+  for(const band of layout.panels){
+   svg.append(svgEl("rect",{x:band.x-12,y:15,width:band.w+24,height:height-35,rx:20,fill:band.fill,stroke:band.stroke,"stroke-width":1.8}));
+   const heading=svgEl("text",{x:band.x+band.w/2,y:46,"text-anchor":"middle","font-family":"system-ui","font-size":18,"font-weight":800,fill:band.color});
+   heading.textContent=band.title+" · "+band.count+" personer";svg.append(heading);
+  }
+ }
+ const edges=svgEl("g",{fill:"none","stroke-linecap":"round","pointer-events":"none"});
+ for(const e of links){
+  if(!ids.has(e.from)||!ids.has(e.to))continue;
+  const a=loc.get(e.from),b=loc.get(e.to);
+  if(!a||!b)continue;
+  const sameRow=Math.abs((a.y+nodeH)-b.y)<20;
+  const x1=a.x+nodeW/2,y1=a.y+nodeH,x2=b.x+nodeW/2,y2=b.y;
+  const middle=y1+(y2-y1)*0.5;
+  const d=layout.ancestryTree||layout.combinedTree?
+    "M"+x1+" "+y1+" V"+middle+" H"+x2+" V"+y2:
+    "M"+x1+" "+y1+" C"+x1+" "+middle+" "+x2+" "+middle+" "+x2+" "+y2;
+  const branch=sideMap.get(e.from)||sideMap.get(e.to);
+  const color=e.confidence==="usikker"?"#856847":branch==="maternal"?"#35748d":branch==="paternal"?"#8c6834":"#35774c";
+  edges.append(svgEl("path",{d,stroke:color,"stroke-width":2.8,"stroke-dasharray":e.confidence==="usikker"?"10 7":"none",opacity:0.85,"data-from":e.from,"data-to":e.to}));
+ }
+ svg.append(edges);
+ const nodes=svgEl("g",{});
+ for(const id of ids){
+  const n=people.get(id),p=loc.get(id);if(!p)continue;
+  const side=sideMap.get(id);
+  const g=svgEl("g",{transform:"translate("+p.x+" "+p.y+")",tabindex:0,role:"button","data-node":id,"aria-label":"Vis "+titleFor(n)});
+  g.style.cursor="pointer";
+  const fill=id===focused?"#c7e8cc":side==="maternal"?"#dceef5":side==="paternal"?"#f7ead1":isPrivate(n)?"#e3f2e5":"white";
+  const stroke=id===selected?"#22533a":side==="maternal"?"#81b2c4":side==="paternal"?"#c5a46c":"#91b99b";
+  g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke,"stroke-width":id===selected?3:1.5}));
+  const nameLines=nodeLabel(n.name);
+  for(let j=0;j<nameLines.length;j++){
+   const t=svgEl("text",{x:nodeW/2,y:21+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":600,"font-size":nameLines.length>2?12:14,fill:"#173e30"});
+   t.textContent=nameLines[j];g.append(t);
+  }
+  const sub=n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
+  const smaller=svgEl("text",{x:nodeW/2,y:nodeH-10,"text-anchor":"middle","font-family":"system-ui","font-size":11.5,fill:"#435d4a"});
+  smaller.textContent=sub;g.append(smaller);
+  g.addEventListener("click",()=>choose(id,false));
+  g.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();choose(id,false)}});
+  nodes.append(g);
+ }
+ svg.append(nodes);port.replaceChildren(svg);
+ lastMapLayout=layout;
+ chart={width,height,scale:1};autoFrame(loc,ids,nodeW,nodeH);highlightConnections();
+ updateBranchControls();
+ $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
+ $("historicalFocusLabel").textContent=mode==="archive"?"Viser alle registrerte historiske personer.":(mode==="ancestors"?"Forfedre til ":mode==="descendants"?"Etterkommere av ":"Familien rundt ")+(people.get(focused)?.name||"valgt person")+". Endre person ved å søke etter et navn.";
+ $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
+ $("status").textContent=layout.ancestryTree?
+  "Historiske forfedre til valgt person. Foreldregrenene tegnes hver for seg der informasjonen er kjent. Stiplede linjer betyr usikker kobling.":
+  mode==="archive"?"Viser hele det historiske arkivet. Velg Forfedre eller søk etter en person for mer oversikt.":
+  "Viser registrerte historiske slektslinjer rundt valgt person.";
+}
+
+let immersive=false,lastMapLayout=null;
+
+
+/* Korrekt slektskapsbetegnelse kommer fra registrerte forelder–barn-forbindelser.
+   Vi gjetter aldri historisk kjønn ut fra et fornavn. */
+function ancestorPaths(start,direction){
+ const result=new Map(),queue=[{id:start,path:[start],links:[]}];
+ result.set(start,{depth:0,path:[start],links:[]});
+ for(let i=0;i<queue.length;i++){
+  const current=queue[i];
+  for(const edge of links){
+   const other=direction==="up"?(edge.to===current.id?edge.from:null):
+     (edge.from===current.id?edge.to:null);
+   if(!other||!people.has(other)||result.has(other))continue;
+   const path=[...current.path,other],edgePath=[...current.links,edge];
+   const record={depth:path.length-1,path,links:edgePath};
+   result.set(other,record);queue.push({id:other,path,links:edgePath});
+  }
+ }
+ return result;
+}
+function ancestorTitle(depth,gender,slot){
+ if(depth===0)return "Dette er deg 🌱";
+ if(depth===1)return gender==="mann"?"Dette er faren din":gender==="kvinne"?"Dette er moren din":"Dette er en av foreldrene dine";
+ if(depth===2){
+  const roles={mormor:"Dette er mormoren din",morfar:"Dette er morfaren din",farmor:"Dette er farmoren din",farfar:"Dette er farfaren din"};
+  if(roles[slot])return roles[slot];
+  return gender==="mann"?"Dette er bestefaren din":gender==="kvinne"?"Dette er bestemoren din":"Dette er en av besteforeldrene dine";
+ }
+ const base=gender==="mann"?"oldefar":gender==="kvinne"?"oldemor":"oldeforelder";
+ const tippCount=depth-3;
+ const prefix=tippCount===0?"":tippCount===1?"tipp":"tipp-".repeat(tippCount);
+ return "Dette er din "+prefix+base;
+}
+function descendantTitle(depth){
+ if(depth===1)return "Dette er barnet ditt";
+ if(depth===2)return "Dette er barnebarnet ditt";
+ if(depth===3)return "Dette er oldebarnet ditt";
+ return "Dette er en etterkommer "+depth+" generasjoner etter deg";
+}
+function relationshipToMe(id){
+ const root=people.get(focused);if(!root||!people.has(id))return {title:"Historisk person",detail:""};
+ if(id===focused)return {title:"Valgt historisk person",detail:"Utforsk forfedre, barn og slektsgrener."};
+ const up=ancestorPaths(focused,"up").get(id);
+ if(up)return {title:"Registrert forfar/formor til "+root.name,detail:up.depth+" generasjoner bakover"+(up.links.some(x=>x.confidence==="usikker")?" · noen usikre koblinger":"")+".",trace:"Slektsveien: "+up.path.map(x=>people.get(x)?.name||"Ukjent").join(" → ")};
+ const down=ancestorPaths(focused,"down").get(id);
+ if(down)return {title:"Etterkommer av "+root.name,detail:down.depth+" generasjoner framover.",trace:"Slektsveien: "+down.path.map(x=>people.get(x)?.name||"Ukjent").join(" → ")};
+ return {title:"Historisk slektning",detail:"Trykk for å utforske denne grenen."};
+}
+function displayRelationship(id){
+ const rel=relationshipToMe(id);
+ $("popupRelation").textContent=rel.title;
+ $("popupTrace").textContent=rel.detail+(rel.trace?" "+rel.trace:"");
+ $("selectedRelation").textContent=rel.title;
+ $("selectedTrace").textContent=rel.detail+(rel.trace?" "+rel.trace:"");
+}
+
+let branchHistory=[];
+function childIds(id){
+ return [...new Set(links.filter(e=>e.from===id&&people.has(e.to)).map(e=>e.to))];
+}
+function descendantIds(id){
+ return reachable(id,"descendants");
+}
+function updateBranchControls(){
+ const n=people.get(focused);
+ const label=n?(mode==="descendants"?"Etterkommere fra ":mode==="ancestors"?"Forfedre til ":"Slekta rundt ")+n.name:"Slektstreet";
+ $("branchTrailLine").textContent=branchHistory.length?"Utforsker: "+label:"Historisk familie: "+label;
+ const backAvailable=branchHistory.length>0;
+ for(const buttonId of ["fullBack","popupBack","branchBackBelow"])$(buttonId).disabled=!backAvailable;
+}
+function showBranchPopup(id){
+ const n=people.get(id);
+ if(!n)return;
+ $("popupPerson").textContent=n.name;
+ displayRelationship(id);
+ const children=childIds(id);
+ const count=descendantIds(id).size-1;
+ const plural=children.length===1?"registrert barn":"registrerte barn";
+ $("popupChildren").textContent=children.length?
+    children.length+" "+plural+" · "+count+" registrerte etterkommere totalt. Velg en retning for å utforske.":
+    "Ingen registrerte barn ennå. Det betyr ikke nødvendigvis at personen var barnløs.";
+ $("popupDescendants").disabled=children.length===0;
+ $("popupDescendants").title=children.length===0?"Ingen barn er registrert i arkivet":"Vis alle registrerte barne- og barnebarnsgrener";
+ $("branchPopup").classList.remove("hidden");
+ updateBranchControls();
+}
+function exploreBranch(id,nextMode){
+ if(!people.has(id))return;
+ const valid=["descendants","ancestors","family"];
+ if(!valid.includes(nextMode))return;
+ if(focused!==id||mode!==nextMode){
+   branchHistory.push({focused,mode,selected,branchSide,generationLimit});
+   if(branchHistory.length>45)branchHistory.shift();
+ }
+ focused=id;selected=id;mode=nextMode;
+ // Å utforske en forfar viser alle registrerte ledd i grenen, ikke bare de nærmeste.
+ generationLimit="all";
+ $("generationLimit").value="all";$("fullGenerationLimit").value="all";
+ syncMode();render();showBranchPopup(id);
+ requestAnimationFrame(()=>focusReadable(id));
+ updateBranchControls();
+}
+function previousBranch(){
+ const last=branchHistory.pop();
+ if(!last)return;
+ focused=last.focused;mode=last.mode;selected=last.selected;
+ generationLimit=last.generationLimit;
+
+ $("generationLimit").value=generationLimit;$("fullGenerationLimit").value=generationLimit;
+ syncMode();render();
+ if(selected&&people.has(selected))showBranchPopup(selected);
+ else $("branchPopup").classList.add("hidden");
+ requestAnimationFrame(()=>focusReadable(selected||focused));
+ updateBranchControls();
+}
+$("popupExit").addEventListener("click",()=>$("branchPopup").classList.add("hidden"));
+$("popupDescendants").addEventListener("click",()=>{if(selected)exploreBranch(selected,"descendants")});
+$("popupAncestors").addEventListener("click",()=>{if(selected)exploreBranch(selected,"ancestors")});
+$("popupFamily").addEventListener("click",()=>{if(selected)exploreBranch(selected,"family")});
+$("popupBack").addEventListener("click",previousBranch);
+$("branchBackBelow").addEventListener("click",previousBranch);
+$("fullBack").addEventListener("click",previousBranch);
+$("descendPerson").addEventListener("click",()=>{if(selected)exploreBranch(selected,"descendants")});
+$("ancestorsPerson").addEventListener("click",()=>{if(selected)exploreBranch(selected,"ancestors")});
+
+function centerAt(id){
+ const pos=lastMapLayout?.loc.get(id),port=$("treePort");
+ if(!pos)return;
+ const zoom=chart.scale;
+ port.scrollLeft=Math.max(0,(pos.x+lastMapLayout.nodeW/2)*zoom-port.clientWidth/2);
+ port.scrollTop=Math.max(0,(pos.y+lastMapLayout.nodeH/2)*zoom-port.clientHeight*0.6);
+}
+function focusReadable(id){
+ const port=$("treePort");
+ const readable=Math.max(0.8,Math.min(1.15,port.clientWidth/310));
+ chart.scale=1;
+ setZoom(readable,0,0);
+ centerAt(id||mine||focused);
+}
+function setImmersive(on){
+ if(immersive===on)return;
+ immersive=on;
+ $("treeWrap").classList.toggle("immersive",on);
+ document.body.classList.toggle("tree-fullscreen",on);
+ $("zoomFit").textContent=on?"Lukk":"Vis alt";
+ $("zoomFit").setAttribute("aria-expanded",String(on));
+ if(on){
+  $("branchPopup").classList.add("hidden");
+  $("generationLimit").value="all";
+  generationLimit="all";
+  $("fullBranchSide").value=branchSide;
+  $("fullGenerationLimit").value="all";
+  render();
+  requestAnimationFrame(()=>focusReadable(focused||mine));
+ }else{
+  render();
+ }
+}
+$("fullClose").addEventListener("click",()=>setImmersive(false));
+$("fullHome").addEventListener("click",showMyParents);
+$("fullOverview").addEventListener("click",fit);
+$("fullBranchSide").addEventListener("change",e=>{
+ branchSide=e.target.value;$("branchSide").value=branchSide;
+ if(mine&&focused!==mine)showMyParents();
+ else {render();requestAnimationFrame(()=>focusReadable(mine||focused));}
+});
+$("fullGenerationLimit").addEventListener("change",e=>{
+ generationLimit=e.target.value;$("generationLimit").value=generationLimit;
+ render();requestAnimationFrame(()=>focusReadable(mine||focused));
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&immersive)setImmersive(false)});
+
+function setZoom(next,cx,cy){
+ const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
+ const old=chart.scale;next=Math.max(.001,Math.min(3.5,next));
+ if(cx===undefined)cx=port.clientWidth/2;if(cy===undefined)cy=port.clientHeight/2;
+ const anchorX=(port.scrollLeft+cx)/old,anchorY=(port.scrollTop+cy)/old;
+ chart.scale=next;
+ svg.setAttribute("width",String(chart.width*next));
+ svg.setAttribute("height",String(chart.height*next));
+ port.scrollLeft=anchorX*next-cx;port.scrollTop=anchorY*next-cy;
+}
+function autoFrame(loc,ids,nodeW,nodeH){
+ const view=$("treePort");
+ const fitRatio=Math.min((view.clientWidth-24)/chart.width,(view.clientHeight-24)/chart.height);
+ if(fitRatio>=0.45){fit();return}
+ // Et veldig stort slektstre skal starte med lesbare navn, ikke krympes til uleselig miniatyr.
+ const readable=Math.max(0.55,Math.min(1,view.clientWidth/(nodeW*2.1)));
+ chart.scale=1;setZoom(readable,0,0);
+ const anchor=ids.has(selected)?selected:ids.has(mine)?mine:ids.has(focused)?focused:[...ids][0];
+ const pos=loc.get(anchor);
+ if(pos){
+   view.scrollLeft=Math.max(0,(pos.x+nodeW/2)*chart.scale-view.clientWidth/2);
+   view.scrollTop=Math.max(0,(pos.y+nodeH/2)*chart.scale-view.clientHeight*0.65);
+ }
+}
+function fit(){
+ const port=$("treePort");const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
+ chart.scale=1;setZoom(Math.min(1.2,Math.max(.001,ratio)),0,0);
+ port.scrollLeft=Math.max(0,(chart.width*chart.scale-port.clientWidth)/2);
+ port.scrollTop=0;
+}
+function choose(id,scrollToDetails=true){
+ if(!people.has(id))return;
+ selected=id;
+ highlightConnections();
+ const n=people.get(id);
+ $("selected").classList.remove("hidden");
+ $("selectedName").textContent=n.name;
+ displayRelationship(id);
+ showBranchPopup(id);
+ $("descendPerson").disabled=childIds(id).length===0;
+ $("selectedMeta").textContent=isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
+ $("focusPerson").onclick=()=>exploreBranch(id,"family");
+ if(scrollToDetails&&!immersive)$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function portTreeNode(id){return people.has(id)}
+
+/* Ingen person velges automatisk med felles familiekode.
+   Forslagene finnes kun i den historiske responsen etter godkjent kode. */
+/* Menyen med navn lages kun av data hentet etter at familiekoden er godkjent. */
+function historicalStartingPeople(){
+ // Navnene nedenfor hentes fra det beskyttede kartdatasettet, ikke fra offentlig HTML.
+ const known=[
+  {id:"h:317ede03-8ea8-48e8-a556-87723b82add8",label:"Se barn og forfedre"},
+  {id:"h:98760455-ab59-46a4-b213-2a19a05a21be",label:"Følg eldre anerekke"},
+  {id:"h:d3b9a0d9-cf36-4f13-8302-555fd708c3c7",label:"Se familiens eldre grener"},
+  {id:"h:f35a714f-621d-4cb4-8cb1-1d1c355c2f15",label:"Utforsk 1400-tallet"}
+ ];
+ const chosen=known.filter(item=>people.has(item.id)).map(item=>({...item,person:people.get(item.id)}));
+ if(chosen.length)return chosen;
+ return [...people.values()].map(person=>({person,label:"Utforsk denne grenen"}))
+  .sort((a,b)=>reachable(b.person.id,"ancestors").size-reachable(a.person.id,"ancestors").size)
+  .slice(0,4);
+}
+function renderStartingPeople(){
+ const target=$("startChoices");target.replaceChildren();
+ for(const item of historicalStartingPeople()){
+  const p=item.person;
+  const b=document.createElement("button");b.type="button";
+  const title=document.createElement("strong");title.textContent=p.name;
+  const description=document.createElement("small");
+  description.textContent=item.label+" · "+(p.born||"?")+"–"+(p.died||"?");
+  b.append(title,description);
+  b.addEventListener("click",()=>openHistoricalPerson(p.id,item.label.includes("barn")?"family":"ancestors"));
+  target.append(b);
+ }
+ const directory=$("personDirectory");
+ directory.replaceChildren();
+ const placeholder=document.createElement("option");
+ placeholder.value="";placeholder.textContent="Velg navn fra listen …";directory.append(placeholder);
+ const sorted=[...people.values()].sort((a,b)=>a.name.localeCompare(b.name,"nb"));
+ for(const p of sorted){
+  const option=document.createElement("option");
+  option.value=p.id;option.textContent=p.name+" ("+(p.born||"?")+"–"+(p.died||"?")+")";
+  directory.append(option);
+ }
+}
+function openHistoricalPerson(id,view="ancestors"){
+ if(!people.has(id))return;
+ homePerson=id;focused=id;selected=id;branchHistory=[];
+ mode=view;generationLimit="all";
+ $("generationLimit").value="all";$("fullGenerationLimit").value="all";
+ $("startPicker").classList.add("hidden");
+ $("treeWelcome").classList.add("hidden");
+ $("treeExperience").classList.remove("hidden");
+ $("chooseAnother").classList.remove("hidden");
+ $("archiveHelp").classList.toggle("hidden",view!=="archive");
+ $("branchPopup").classList.add("hidden");
+ $("search").value=people.get(id).name;
+ $("matches").replaceChildren();
+ syncMode();render();choose(id,false);
+ requestAnimationFrame(()=>focusReadable(id));
+}
+function openWholeHistoricalMap(){
+ if(!people.size)return;
+ const anchor=historicalStartingPeople()[0]?.person||[...people.values()][0];
+ openHistoricalPerson(anchor.id,"archive");
+ $("search").value="";
+ $("historicalFocusLabel").textContent="Viser alle historiske personer. Søk etter et navn for å utforske den delen du ønsker.";
+ // Gå direkte til det store kartet – uten ekstra knappetrykk.
+ setImmersive(true);
+ requestAnimationFrame(()=>focusReadable(anchor.id));
+}
+function returnToHistoricalChooser(){
+ if(immersive)setImmersive(false);
+ homePerson=null;focused=null;selected=null;mode="ancestors";branchHistory=[];
+ $("search").value="";$("matches").replaceChildren();
+ $("branchPopup").classList.add("hidden");
+ $("treeWelcome").classList.remove("hidden");
+ $("startPicker").classList.remove("hidden");
+ $("treeExperience").classList.add("hidden");
+ $("archiveHelp").classList.add("hidden");
+ $("chooseAnother").classList.add("hidden");
+ $("historicalFocusLabel").textContent="Velg en historisk person eller åpne hele kartet.";
+}
+$("openWholeMap").addEventListener("click",openWholeHistoricalMap);
+$("openDirectoryPerson").addEventListener("click",()=>{
+ const id=$("personDirectory").value;
+ if(id&&people.has(id))openHistoricalPerson(id,"family");
+ else $("personDirectory").focus();
+});
+$("chooseAnother").addEventListener("click",returnToHistoricalChooser);
+function showMyParents(){
+ returnToHistoricalChooser();
+}
+$("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
+$("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
+$("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
+$("zoomOut").onclick=()=>setZoom(chart.scale/1.3);
+$("zoomFit").onclick=()=>setImmersive(!immersive);
+$("showMine").onclick=showMyParents;
+function syncMode(){
+ for(const b of document.querySelectorAll("#modeBar button"))b.setAttribute("aria-pressed",String(b.dataset.mode===mode));
+}
+for(const b of document.querySelectorAll("#modeBar button"))b.addEventListener("click",()=>{
+ mode=b.dataset.mode;syncMode();render();
+ if(mode!=="archive")requestAnimationFrame(()=>focusReadable(focused));
+});
+$("search").addEventListener("input",()=>{
+ const q=escapeSearch($("search").value),wrap=$("matches");wrap.replaceChildren();
+ if(!q||q.length<2)return;
+ const matches=[...people.values()].filter(p=>escapeSearch(p.name).includes(q))
+ .sort((a,b)=>(a.id===mine?-1:0)-(b.id===mine?-1:0)||a.name.localeCompare(b.name,"nb")).slice(0,12);
+ for(const p of matches){
+  const b=document.createElement("button");b.type="button";b.textContent=p.name;
+  b.onclick=()=>openHistoricalPerson(p.id);
+  wrap.append(b);
+ }
+ if(!matches.length){
+  const tip=document.createElement("div");
+  tip.className="private-search-tip";
+  const message=document.createElement("span");
+  message.textContent="Ingen treff blant avdøde historiske personer. Leter du etter deg selv eller en levende slektning? ";
+  const link=document.createElement("a");
+  link.href="./familie.html";
+  link.textContent="Bruk personlig innlogging for å finne deg selv.";
+  tip.append(message,link);
+  wrap.append(tip);
+ }
+});
+// Drag one finger/mouse to pan; pinch two fingers to zoom the map.
+const port=$("treePort");let drag=null,pinch=null;
+function dist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+port.addEventListener("touchstart",e=>{
+ if(e.touches.length>=2){pinch={distance:dist(e.touches[0],e.touches[1]),scale:chart.scale};drag=null}
+ else if(e.touches.length===1){drag={x:e.touches[0].clientX,y:e.touches[0].clientY}}
+},{passive:true});
+port.addEventListener("touchmove",e=>{
+ if(e.touches.length>=2&&pinch){
+  e.preventDefault();const a=e.touches[0],b=e.touches[1],rect=port.getBoundingClientRect();
+  const cx=(a.clientX+b.clientX)/2-rect.left,cy=(a.clientY+b.clientY)/2-rect.top;
+  setZoom(pinch.scale*dist(a,b)/pinch.distance,cx,cy);
+ }else if(e.touches.length===1&&drag){
+  e.preventDefault();const t=e.touches[0];port.scrollLeft-=t.clientX-drag.x;port.scrollTop-=t.clientY-drag.y;
+  drag={x:t.clientX,y:t.clientY};
+ }
+},{passive:false});
+port.addEventListener("touchend",e=>{if(e.touches.length<2)pinch=null;if(e.touches.length===0)drag=null},{passive:true});
+// Musehjulet zoomer direkte når pekeren er over selve slektskartet.
+ // Utenfor kartflaten fungerer vanlig sideskrolling som før.
+port.addEventListener("wheel",e=>{
+ const svg=port.querySelector("svg");
+ if(!svg||!e.deltaY)return;
+ e.preventDefault();
+ const rect=port.getBoundingClientRect();
+ const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?port.clientHeight:1);
+ const zoomFactor=Math.exp(-Math.max(-350,Math.min(350,delta))*0.0015);
+ setZoom(chart.scale*zoomFactor,e.clientX-rect.left,e.clientY-rect.top);
+},{passive:false});
+port.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button===0){drag={x:e.clientX,y:e.clientY};port.setPointerCapture(e.pointerId)}});
+port.addEventListener("pointermove",e=>{
+ if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
+});
+port.addEventListener("pointerup",()=>{drag=null});
+window.addEventListener("resize",()=>{if(people.size)fit()});
+async function displayTree(data){
+ if(!Array.isArray(data.persons)||!Array.isArray(data.relationships))
+  throw Error("Uventet svar fra historisk familiearkiv");
+ rebuildGraph(data.persons,data.relationships);
+ if(!people.size){$("loadingMsg").textContent="Ingen historiske personer er registrert.";return;}
+ homePerson=null;focused=null;selected=null;mode="ancestors";branchHistory=[];
+ $("loading").classList.add("hidden");$("app").classList.remove("hidden");
+ renderStartingPeople();
+ returnToHistoricalChooser();
+}
+async function useToken(token){
+  const tree=await api("tree",{token});
+  if(!tree.ok)return false;
+  await displayTree(tree);return true;
+}
+$("codeForm").addEventListener("submit",async e=>{
+  e.preventDefault();const btn=e.target.querySelector("button");btn.disabled=true;
+  $("loadingMsg").textContent="Sjekker familiekoden …";
+  const result=await api("unlock",{code:$("familyCode").value});
+  $("familyCode").value="";
+  if(!result.ok){
+    $("loadingMsg").textContent=result.error||"Familiekoden ble ikke godkjent.";
+    btn.disabled=false;return;
+  }
+  sessionStorage.setItem(TOKEN_KEY,result.token);
+  const success=await useToken(result.token);
+  if(!success)$("loadingMsg").textContent="Koden ble godkjent, men slektstreet kunne ikke lastes.";
+  btn.disabled=false;
+});
+(async()=>{
+ const token=sessionStorage.getItem(TOKEN_KEY);
+ if(token){
+  $("loadingMsg").textContent="Gjenåpner slektstreet …";
+  if(!await useToken(token)){
+    sessionStorage.removeItem(TOKEN_KEY);
+    $("loadingMsg").textContent="Skriv inn familiekoden for å fortsette.";
+  }
+ }
+})().catch(err=>$("loadingMsg").textContent="Kunne ikke åpne slektstreet: "+err.message);
+
+
+</script>
+</body>
+</html>
