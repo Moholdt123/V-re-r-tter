@@ -141,6 +141,29 @@ header .brand-text{display:block;min-width:0}
 header .brand-text h1{margin:0}
 header .brand-text p,header .brand-text small{display:block}
 
+
+/* Enkel startside når familiekoden er godkjent */
+#treeWelcome{background:#f0f7ef;border:1px solid #b7d4b9;border-radius:17px;padding:clamp(17px,3vw,26px);margin:13px 0}
+#treeWelcome h3{font:normal clamp(24px,4vw,32px) Georgia,serif;margin:0 0 8px;color:var(--forest)}
+#treeWelcome p{margin:0 0 15px}
+#openWholeMap{display:flex;flex-direction:column;gap:4px;text-align:left;width:100%;padding:18px 21px;border-radius:12px;font-size:19px}
+#openWholeMap span{font-size:13px;font-weight:400;color:#d9eadd}
+#treeWelcome .directHint{font-size:12px;color:var(--muted);margin:9px 0 0}
+#startPicker{background:#fff;border-color:#d4e4d5;padding:0;border:0;margin:16px 0}
+#startPicker h3{font-size:23px}
+#startPicker p{margin:3px 0 11px}
+#startChoices{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
+#startChoices button{min-height:88px;padding:13px}
+#historicalFindRow{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-top:15px}
+#historicalFindRow label{flex:1;min-width:205px;font-size:13px;font-weight:750;color:var(--forest)}
+#historicalFindRow select{display:block;width:100%;margin-top:5px;min-height:47px;padding:11px;border:1px solid #b8cfbe;border-radius:10px;background:#fff;color:var(--text)}
+#historicalFindRow button{min-height:47px}
+#privateSelfHint{margin:16px 0;background:#f6faf6}
+#privateSelfHint p{max-width:760px}
+#chooseAnother{margin:7px 0 13px}
+#archiveHelp{padding:10px 14px;background:#f5f9f4;border:1px solid #d4e5d6;border-radius:10px;margin:11px 0;font-size:13px}
+@media(max-width:620px){#startChoices{grid-template-columns:1fr}#historicalFindRow{display:block}#historicalFindRow button{width:100%;margin-top:10px}}
+
 </style>
 </head>
 <body>
@@ -160,30 +183,44 @@ header .brand-text p,header .brand-text small{display:block}
 </section>
 <section id="app" class="hidden">
 <div class="card">
- <h2>Utforsk slekta di 🌿</h2>
- <p class="muted">Utforsk det samme store, oppdaterte kartet som i familierommet – nå med familiepassord. Velg en historisk person og følg foreldre, barn og slektsgrener i fullskjerm. Levende personer og private profiler vises ikke.</p>
- <p class="muted"><a href="./familie.html">Har du personlig medlemsinnlogging?</a> Her får du flere funksjoner og eventuelle administratorrettigheter.</p>
+ <h2>Familiens slektstre 🌳</h2>
+ <p class="muted">Du er inne i det historiske slektsarkivet. Velg hele kartet eller start hos en person du kjenner til. Opplysninger om nålevende personer er fortsatt private.</p>
+ <section id="treeWelcome" aria-label="Velg hvordan du vil utforske">
+  <h3>Hva vil du se?</h3>
+  <p>Du trenger ikke vite hvor i slekta du hører til for å begynne.</p>
+  <button id="openWholeMap" type="button">🌳 Åpne hele det historiske slektstreet
+   <span>Vis alle registrerte historiske personer. Dra rundt og zoom inn for å lese navnene.</span>
+  </button>
+  <p class="directHint">Kartet er stort. «Oversikt» viser hele kartet samlet; søk eller velg en person for et mer lesbart utsnitt.</p>
+ </section>
+ <section id="startPicker" aria-label="Velg historisk familiegren" class="hidden">
+   <h3>🌿 Eller start med en familiegren</h3>
+   <p class="muted">Her er noen tydelige innganger til den registrerte slekta. Navnene hentes fra det historiske arkivet etter at familiekoden er godkjent.</p>
+   <div id="startChoices" aria-label="Familiegrener du kan utforske"></div>
+   <div id="historicalFindRow">
+    <label for="personDirectory">Finn en bestemt historisk person
+      <select id="personDirectory" aria-label="Velg historisk person alfabetisk">
+       <option value="">Velg navn fra listen …</option>
+      </select>
+    </label>
+    <button type="button" id="openDirectoryPerson">Vis denne familiegrenen</button>
+   </div>
+ </section>
  <div class="searchline">
-   <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
+   <input id="search" type="search" placeholder="Eller søk etter navn …" aria-label="Søk blant historiske personer" autocomplete="off">
    <button id="showMine" type="button">🌳 Til start</button>
  </div>
  <div id="matches" aria-live="polite"></div>
- <p id="historicalFocusLabel" class="muted" aria-live="polite">Velg en historisk person for å utforske slekta.</p>
+ <p id="historicalFocusLabel" class="muted" aria-live="polite">Velg en historisk person eller åpne hele kartet.</p>
+ <button id="chooseAnother" type="button" class="secondary hidden">↩ Til kartmenyen</button>
+ <p id="archiveHelp" class="muted hidden">Hele det historiske arkivet er nå åpnet. Kartet er stort: bruk zoom eller «Oversikt», eller søk etter en person for å følge én slektsgren.</p>
  <aside id="privateSelfHint" aria-label="Finn ditt eget private slektstre">
   <div>
-   <strong>🌱 Leter du etter deg selv?</strong>
-   <p>Med familiepassordet kan du søke blant avdøde historiske personer. Du og andre nålevende familiemedlemmer er beskyttet. Logg inn med din personlige e-postkonto for å se deg selv og din private slektsgren.</p>
+   <strong>🌱 Vil du finne deg selv?</strong>
+   <p>Familiepassordet viser kun historiske personer. Bruk personlig innlogging for din private familiegren.</p>
   </div>
-  <a href="./familie.html">🔐 Logg inn og finn meg</a>
+  <a href="./familie.html">🔐 Personlig innlogging</a>
  </aside>
-
- <section id="startPicker" aria-label="Velg slektsgren" class="hidden">
-   <h3>🌳 Hvilken historisk slekt vil du utforske?</h3>
-   <p class="muted">Familiepassordet gir tilgang til det historiske arkivet, men nettsiden vet ikke hvem du er. Derfor velger du selv en historisk person. Dette er <strong>forslag til startpersoner</strong> – du kan også søke etter hvem du vil i feltet over.</p>
-   <div id="startChoices" aria-label="Forslag til historiske startpersoner"></div>
-   <p class="muted" style="margin:14px 0 0">Du kan når som helst bytte person eller velge «Alle historiske» etter at du har åpnet en gren.</p>
- </section>
- <button id="chooseAnother" type="button" class="secondary hidden">↩ Velg en annen slektsgren</button>
  <div id="treeExperience" class="hidden">
  <div id="modeBar" role="group" aria-label="Visning av slektskart">
    <button data-mode="family" aria-pressed="true">Slekt rundt person</button>
@@ -977,68 +1014,89 @@ function portTreeNode(id){return people.has(id)}
 
 /* Ingen person velges automatisk med felles familiekode.
    Forslagene finnes kun i den historiske responsen etter godkjent kode. */
+/* Menyen med navn lages kun av data hentet etter at familiekoden er godkjent. */
 function historicalStartingPeople(){
- const ranked=[...people.values()].map(person=>{
-   const parents=new Set(links.filter(e=>e.to===person.id).map(e=>e.from)).size;
-   const generations=reachable(person.id,"ancestors").size;
-   const adult=Number.isFinite(person.born)&&Number.isFinite(person.died)&&person.born>0&&person.died-person.born>=18;
-   const possibleAdult=!person.born||!person.died||person.died-person.born>=18;
-   const familyName=(person.name.trim().split(/\s+/).at(-1)||"").toLocaleLowerCase("nb");
-   return {person,parents,generations,possibleAdult,adult,familyName};
- }).filter(x=>x.possibleAdult)
- .sort((a,b)=>Number(b.parents>=2)-Number(a.parents>=2)||
-   b.generations-a.generations||Number(b.adult)-Number(a.adult)||
-   Number(b.person.born||0)-Number(a.person.born||0)||
-   a.person.name.localeCompare(b.person.name,"nb"));
- const chosen=[],surnames=new Set();
- for(const item of ranked){
-   if(chosen.length>=5)break;
-   if(surnames.has(item.familyName))continue;
-   chosen.push(item.person);
-   surnames.add(item.familyName);
- }
- // Ved svært små arkiver kan færre enn fem forslag være naturlig.
- return chosen;
+ // Navnene nedenfor hentes fra det beskyttede kartdatasettet, ikke fra offentlig HTML.
+ const known=[
+  {id:"h:317ede03-8ea8-48e8-a556-87723b82add8",label:"Se barn og forfedre"},
+  {id:"h:98760455-ab59-46a4-b213-2a19a05a21be",label:"Følg eldre anerekke"},
+  {id:"h:d3b9a0d9-cf36-4f13-8302-555fd708c3c7",label:"Se familiens eldre grener"},
+  {id:"h:f35a714f-621d-4cb4-8cb1-1d1c355c2f15",label:"Utforsk 1400-tallet"}
+ ];
+ const chosen=known.filter(item=>people.has(item.id)).map(item=>({...item,person:people.get(item.id)}));
+ if(chosen.length)return chosen;
+ return [...people.values()].map(person=>({person,label:"Utforsk denne grenen"}))
+  .sort((a,b)=>reachable(b.person.id,"ancestors").size-reachable(a.person.id,"ancestors").size)
+  .slice(0,4);
 }
 function renderStartingPeople(){
  const target=$("startChoices");target.replaceChildren();
- const candidates=historicalStartingPeople();
- for(const person of candidates){
-   const b=document.createElement("button");b.type="button";
-   b.append(Object.assign(document.createElement("strong"),{textContent:person.name}));
-   const years=[person.born||"?",person.died||"?"].join("–");
-   b.append(Object.assign(document.createElement("small"),{textContent:years+" · Utforsk historisk familiegren"}));
-   b.addEventListener("click",()=>openHistoricalPerson(person.id));
-   target.append(b);
+ for(const item of historicalStartingPeople()){
+  const p=item.person;
+  const b=document.createElement("button");b.type="button";
+  const title=document.createElement("strong");title.textContent=p.name;
+  const description=document.createElement("small");
+  description.textContent=item.label+" · "+(p.born||"?")+"–"+(p.died||"?");
+  b.append(title,description);
+  b.addEventListener("click",()=>openHistoricalPerson(p.id,item.label.includes("barn")?"family":"ancestors"));
+  target.append(b);
  }
- if(!candidates.length)target.append(Object.assign(document.createElement("p"),{textContent:"Søk etter navnet på den historiske personen du vil utforske."}));
+ const directory=$("personDirectory");
+ directory.replaceChildren();
+ const placeholder=document.createElement("option");
+ placeholder.value="";placeholder.textContent="Velg navn fra listen …";directory.append(placeholder);
+ const sorted=[...people.values()].sort((a,b)=>a.name.localeCompare(b.name,"nb"));
+ for(const p of sorted){
+  const option=document.createElement("option");
+  option.value=p.id;option.textContent=p.name+" ("+(p.born||"?")+"–"+(p.died||"?")+")";
+  directory.append(option);
+ }
 }
-function openHistoricalPerson(id){
+function openHistoricalPerson(id,view="ancestors"){
  if(!people.has(id))return;
  homePerson=id;focused=id;selected=id;branchHistory=[];
- mode="ancestors";generationLimit="all";
+ mode=view;generationLimit="all";
  $("generationLimit").value="all";$("fullGenerationLimit").value="all";
  $("startPicker").classList.add("hidden");
+ $("treeWelcome").classList.add("hidden");
  $("treeExperience").classList.remove("hidden");
  $("chooseAnother").classList.remove("hidden");
+ $("archiveHelp").classList.toggle("hidden",view!=="archive");
  $("branchPopup").classList.add("hidden");
  $("search").value=people.get(id).name;
  $("matches").replaceChildren();
  syncMode();render();choose(id,false);
  requestAnimationFrame(()=>focusReadable(id));
 }
+function openWholeHistoricalMap(){
+ if(!people.size)return;
+ const anchor=historicalStartingPeople()[0]?.person||[...people.values()][0];
+ openHistoricalPerson(anchor.id,"archive");
+ $("search").value="";
+ $("historicalFocusLabel").textContent="Viser alle historiske personer. Søk etter et navn for å utforske den delen du ønsker.";
+ // Gå direkte til det store kartet – uten ekstra knappetrykk.
+ setImmersive(true);
+ requestAnimationFrame(()=>focusReadable(anchor.id));
+}
 function returnToHistoricalChooser(){
  if(immersive)setImmersive(false);
- homePerson=null;focused=null;selected=null;branchHistory=[];
+ homePerson=null;focused=null;selected=null;mode="ancestors";branchHistory=[];
  $("search").value="";$("matches").replaceChildren();
  $("branchPopup").classList.add("hidden");
+ $("treeWelcome").classList.remove("hidden");
  $("startPicker").classList.remove("hidden");
  $("treeExperience").classList.add("hidden");
+ $("archiveHelp").classList.add("hidden");
  $("chooseAnother").classList.add("hidden");
- $("historicalFocusLabel").textContent="Velg en historisk person for å utforske slekta.";
+ $("historicalFocusLabel").textContent="Velg en historisk person eller åpne hele kartet.";
 }
+$("openWholeMap").addEventListener("click",openWholeHistoricalMap);
+$("openDirectoryPerson").addEventListener("click",()=>{
+ const id=$("personDirectory").value;
+ if(id&&people.has(id))openHistoricalPerson(id,"family");
+ else $("personDirectory").focus();
+});
 $("chooseAnother").addEventListener("click",returnToHistoricalChooser);
-
 function showMyParents(){
  returnToHistoricalChooser();
 }
