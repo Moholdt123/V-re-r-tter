@@ -110,6 +110,12 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
   <div class="top"><div><h2 style="margin-bottom:4px">Velkommen til familierommet 🌿</h2><p class="muted" id="welcome"></p></div><button class="secondary" id="signOut">Logg ut</button></div>
   
 
+<section class="card hidden" id="administratorLink" style="margin-bottom:18px;background:#e9f4e8;border:1px solid #b5d3bc">
+   <div class="eyebrow">Kun for deg med administratorrettigheter</div>
+   <h3>👑 Administratorpanel</h3>
+   <p class="muted">Styr familiepassord, medlemskontoer og det historiske slektstreet fra ett sted.</p>
+   <a href="./admin.html" style="display:inline-block;background:var(--dark);color:#fff;text-decoration:none;padding:12px 17px;border-radius:10px;font-weight:700">Åpne administratorpanelet</a>
+  </section>
   <section class="card hidden" id="familyCodeAdmin" style="margin-bottom:18px;border:1px solid #bfd6c6;background:#f4faf3">
     <div class="eyebrow">Bare for administrator</div>
     <h3>🔐 Familiens felles passord</h3>
@@ -400,7 +406,7 @@ $("setFamilyCodeForm").addEventListener("submit",async e=>{
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
- if(!user){privateFamilyData.clear();privateHistoricalBridges=[];persons=[];ties=[];show("login");hide("join");hide("private");return}
+ if(!user){privateFamilyData.clear();privateHistoricalBridges=[];persons=[];ties=[];hide("administratorLink");show("login");hide("join");hide("private");return}
  const {data:p,error}=await db.from("familie_medlemmer").select("visningsnavn,status,rolle").eq("bruker_id",user.id).maybeSingle();
  if(error){show("login");hide("join");hide("private");notice("loginStatus","Kunne ikke sjekke tilgang: "+authErrorMessage(error),true);return}
  profile=p;
@@ -409,6 +415,7 @@ async function updateState(){
  if(p?.status!=="aktiv"){show("join");show("joinForm");hide("private");$("joiningAs").textContent="E-post bekreftet: "+(user.email||"");return}
  hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
  if(p.rolle==="administrator")show("familyCodeAdmin");else hide("familyCodeAdmin");
+ if(p.rolle==="administrator")show("administratorLink");else hide("administratorLink");
  await loadOwnLivingProfile();
  await loadOwnFamilyBranch();
  await loadOwnHistoricalBridges();
