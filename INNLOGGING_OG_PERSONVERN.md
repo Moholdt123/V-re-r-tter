@@ -81,3 +81,32 @@ annen brukeridentitet så null. \`anon\` hadde null tabellrettigheter, og
 fire RLS-policies var installert. Koden i den oppdaterte \`familie.html\` er
 syntakssjekket, men faktisk autentisert mobilvisning av den nye
 profilseksjonen må fremdeles prøves i nettleseren.
+
+
+## Privat historisk slektsbro – oktober 2026
+
+Et eget privat utkast til seks nærmeste familieforbindelser finnes i `public.familiegren_utkast`.
+Tabellen `public.familiegren_historiske_koblinger` har nå fem koblinger mot
+avdøde personer i det eksisterende `public.personer`-registeret. Disse kan
+være `samme_person` (historisk profil = personen i den private grenen)
+eller `forelder` (historisk profil er oppgitt forelder til personen i utkastet).
+
+**Ikke hardkod levende personnavn eller disse private koblingene i offentlig
+`familie.html` eller `index.html`.** Koblingstabellen inneholder UUID-er
+og relasjonsnøkler, har RLS, og gir bare SELECT til et aktivt medlem når
+`bruker_id = auth.uid()`. Ingen `anon`-tilgang eller write-rettigheter
+til autentiserte klienter; endringer i koblingene må kvalitetssikres
+administrativt. En egen seksjon i familierommet henter koblingene fra
+Supabase etter innlogging, og viser knapper til eksisterende historiske
+personprofiler, som i sin tur har videre slektsforbindelser.
+
+Grunnlaget er familiens overføringsnotat og eksisterende data,
+**ikke en ny primærkildekontroll**. Det er ingen registrert kobling for
+farfars gren ennå. Ved endring i et privat familienavn må koblingene
+gjennomgås før de kan anses som riktige. Det store delte slektstreet
+viser fortsatt ingen levende personer.
+
+Kontroll: fem historiske koblinger lagret; anonym rolle og en annen
+brukeridentitet fikk null resultater; `anon` har null tabelltilgang.
+Koden er syntakssjekket og mobil-CSS forbedret. Manuell test av
+knapper i innlogget mobilnettleser gjenstår.
