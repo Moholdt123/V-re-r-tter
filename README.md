@@ -34,3 +34,19 @@ Flere eldre slektsforbindelser stammer fra familiens slektshefter og fortellinge
 Nye slektsopplysninger skal legges i den beskyttede databasen, **ikke** i `index.html` eller andre offentlige filer. GitHub Pages publiserer bare brukergrensesnittet.
 
 > **Viktig:** Å fjerne persondata fra dagens `index.html` fjerner ikke gamle data fra Git-historikk, søkemotorers hurtiglagre eller tidligere kopier. Offentlig GitHub-repository må vurderes separat. Skal alle historiske slektsdata også holdes private, må vi vurdere nytt privat repository og eventuell flytting til sikker hosting. En offentlig forside og GitHub-kode kan ikke alene gi fortrolighet.
+
+
+## Interaktivt slektskart (kun innloggede)
+
+Slektskartet ligger på `slektskart.html` og er lenket fra `familie.html`.
+Forsiden `index.html` inneholder ingen slektsnavn eller gamle `PEOPLE`-data.
+
+- Supabase Auth og et aktivt medlemskap kreves **før** historiske og private slektsdata hentes.
+- Kartet kan søkes etter navn og viser «Hele slekta mi», «Forfedre», «Etterkommere» og «Alle registrerte».
+- Dra/scroll for å flytte, knip for å zoome eller bruk +, − og «Vis alt».
+- Historiske personer kan åpnes i `familie.html#person=<uuid>`; private slektsledd peker mot den brukerbeskyttede familiegrenen.
+- Levendes profiler, familienavn i den private grenen og historiske private koblinger ligger i egne RLS-beskyttede tabeller og hentes ikke inn i statiske GitHub-filer.
+- «Hele slekta mi» viser slektskoblinger som faktisk finnes. Tanter, onkler, søskenbarn og kusiner **dukker ikke opp automatisk** før de er lagt inn og eventuelle rettigheter er avklart.
+- Eksisterende historiske slektskoblinger kan være merket `usikker` og skal ikke fremstilles som dokumenterte.
+
+**Gjenstående personvernarbeid:** Det offentlige repositoryets tidligere Git-historikk og eventuelle gamle, indekserte kopier kan fortsatt inneholde historiske personopplysninger. Dette er ikke ryddet opp i ved å endre forsiden; flytting/privatisering av repository og vertskap må vurderes separat.
