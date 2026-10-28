@@ -50,3 +50,16 @@ Forsiden `index.html` inneholder ingen slektsnavn eller gamle `PEOPLE`-data.
 - Eksisterende historiske slektskoblinger kan være merket `usikker` og skal ikke fremstilles som dokumenterte.
 
 **Gjenstående personvernarbeid:** Det offentlige repositoryets tidligere Git-historikk og eventuelle gamle, indekserte kopier kan fortsatt inneholde historiske personopplysninger. Dette er ikke ryddet opp i ved å endre forsiden; flytting/privatisering av repository og vertskap må vurderes separat.
+
+
+## Slektskapsbetegnelser i kartet
+
+Slektskartet regner nå ut slektskapsavstand **fra brukerens egen private profil** ved å følge registrerte forelder–barn-koblinger bakover:
+- Foreldre, besteforeldre, oldeforeldre, tippoldeforeldre og flere `tipp-` for eldre generasjoner.
+- For avdøde historiske personer brukes valgfri `public.personer.kjonn` (`mann` eller `kvinne`). Uten registrert opplysning brukes nøytral form, som `tippoldeforelder`, aldri et gjetning fra navnet.
+- Bekreftede private roller (mor, far, mormor, morfar, farmor, farfar) gir presis betegnelse og kan også angi rollen til en allerede registrert historisk person som er markert `samme_person`.
+- For sidegrener vises ikke en feilaktig direkte-forfar-betegnelse. Der vises felles stamforelder hvis det finnes registrert grunnlag; ellers manglende kobling.
+- Korteste registrerte slektsvei brukes for å telle generasjoner. Usikre ledd oppgis særskilt. Dette verifiserer ikke familieopplysningene mot primærkilder.
+- Administratoren kan nå velge historisk kjønn i `admin.html` for personer der dette er sikkert kjent; ingen av de 79 historiske personene ble automatisk klassifisert ved innføring av feltet.
+
+Testet med syntetiske slektsdata fra foreldre til åtte tipp-generasjoner, sidegrener og etterkommere. Manuell visuell mobilsesjon er ikke utført etter denne endringen.
