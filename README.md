@@ -1,6 +1,6 @@
 # Våre røtter 🌳
 
-Dette er familiens felles, **offentlige historiske slektstre**.
+Dette prosjektet utvikles nå som **et privat slektstre og minnebok for inviterte familiemedlemmer**. HTML/JavaScript kan være offentlig tilgjengelig, men private data må beskyttes av Supabase Auth, Row Level Security og privat Storage.
 
 ## Nettsiden
 
@@ -8,7 +8,7 @@ Når GitHub Pages er aktivert, åpnes siden på:
 
 **https://moholdt123.github.io/V-re-r-tter/**
 
-Siden lar besøkende søke etter historiske slektninger, klikke seg mellom personer, velge **Forfedre** eller **Etterkommere**, og zoome i slektskartet.
+Forsiden skal bare vise en velkomsttekst og lenke til innlogging. Ingen personslektsdata skal ligge direkte i den publiserte HTML-en.
 
 ## Privat familierom
 
@@ -25,10 +25,12 @@ E-postinnlogging med invitasjonskode er utviklet. Før bruk for hele familien m�
 
 ## Personvern og kilder
 
-Den offentlige oversikten skal bare inneholde historiske personer, ikke nålevende familiemedlemmer. Ikke last opp den komplette private ZIP-filen til dette prosjektet. GitHub Pages og alt som legges i dette offentlige repoet kan leses av alle, også personer utenfor Facebook-gruppen.
+Målet er at ingen slektsopplysninger skal ligge i den publiserte forsiden. Tidligere versjoner av det offentlige repositoryet kan fortsatt inneholde historiske persondata i Git-historikken. Ikke last opp den komplette private ZIP-filen til dette prosjektet. GitHub Pages og alt som legges i dette offentlige repoet kan leses av alle, også personer utenfor Facebook-gruppen.
 
-Flere av de eldre slektsforbindelsene stammer fra familiens slektshefter, familiefortellinger og private slektstrær. **Ubekreftede forbindelser er merket særskilt.** Bruk kildehenvisningene på personprofilene.
+Flere eldre slektsforbindelser stammer fra familiens slektshefter og fortellinger. Usikre forbindelser skal fortsatt merkes tydelig i det private slektsarkivet.
 
 ## Oppdatering
 
-Ved nye genealogiske funn oppdateres `index.html` i denne GitHub-mappen. GitHub Pages publiserer da endringene til samme nettadresse. Ingen ny ZIP-fil trengs for besøkende.
+Nye slektsopplysninger skal legges i den beskyttede databasen, **ikke** i `index.html` eller andre offentlige filer. GitHub Pages publiserer bare brukergrensesnittet.
+
+> **Viktig:** Å fjerne persondata fra dagens `index.html` fjerner ikke gamle data fra Git-historikk, søkemotorers hurtiglagre eller tidligere kopier. Offentlig GitHub-repository må vurderes separat. Skal alle historiske slektsdata også holdes private, må vi vurdere nytt privat repository og eventuell flytting til sikker hosting. En offentlig forside og GitHub-kode kan ikke alene gi fortrolighet.
