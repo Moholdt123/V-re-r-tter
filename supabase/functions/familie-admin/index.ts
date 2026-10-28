@@ -47,7 +47,7 @@ Deno.serve(async(req:Request)=>{
   if(body.action==="dashboard"){
    const [members,persons,connections,stories,files,history]=await Promise.all([
     db.from("familie_medlemmer").select("bruker_id,visningsnavn,rolle,status,opprettet").order("opprettet",{ascending:true}).limit(200),
-    db.from("personer").select("id,navn,fodt_ar,dod_ar,kort_biografi,kildehenvisning,lever").eq("lever",false).order("navn").limit(1500),
+    db.from("personer").select("id,navn,fodt_ar,dod_ar,kort_biografi,kildehenvisning,kjonn,lever").eq("lever",false).order("navn").limit(1500),
     db.from("slektsforbindelser").select("id,fra_person,til_person,type,sikkerhet,kildehenvisning").eq("type","forelder_barn").limit(5000),
     db.from("historier").select("id,person_id,tittel,signatur,opprettet").order("opprettet",{ascending:false}).limit(30),
     db.from("arkivfiler").select("id,person_id,filnavn,beskrivelse,opprettet").order("opprettet",{ascending:false}).limit(30),
@@ -79,11 +79,12 @@ Deno.serve(async(req:Request)=>{
    if(id!==undefined&&id!==null&&!uuid(id))return send(400,{error:"Ugyldig person-id."},origin);
    const name=trim(body.navn,250),born=year(body.fodt_ar),died=year(body.dod_ar);
    const bio=trim(body.kort_biografi,3500),source=trim(body.kildehenvisning,1200);
+   const gender=body.kjonn===null||body.kjonn===undefined||body.kjonn===""?null:body.kjonn;
    if(name.length<3||name.length>250||Number.isNaN(born)||Number.isNaN(died)||
       (born!==null&&died!==null&&died<born)||
-      bio.length>3500||source.length>1200)
+      bio.length>3500||source.length>1200||(gender!==null&&!["mann","kvinne"].includes(String(gender))))
     return send(400,{error:"Sjekk navn, årstall og opplysningene."},origin);
-   const values={navn:name,fodt_ar:born,dod_ar:died,
+   const values={navn:name,fodt_ar:born,dod_ar:died,kjonn:gender,
     kort_biografi:bio||null,kildehenvisning:source||null,oppdatert:new Date().toISOString()};
    if(id){
     const {data:old,error:lookupError}=await db.from("personer")
