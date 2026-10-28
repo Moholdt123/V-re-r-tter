@@ -537,7 +537,7 @@ function ancestryLayout(root,allowed,config){
   }
  }
  return {
-  ids:new Set(loc.keys()),split:root===mine,sideMap,loc,
+  ids:new Set(loc.keys()),split:rootParents.length>=2,sideMap,loc,
   width,height,panels,
   nodeW,nodeH,keys,ancestryTree:true,root
  };
@@ -813,8 +813,8 @@ function previousBranch(){
  const last=branchHistory.pop();
  if(!last)return;
  focused=last.focused;mode=last.mode;selected=last.selected;
- branchSide=last.branchSide;generationLimit=last.generationLimit;
- $("branchSide").value=branchSide;$("fullBranchSide").value=branchSide;
+ generationLimit=last.generationLimit;
+
  $("generationLimit").value=generationLimit;$("fullGenerationLimit").value=generationLimit;
  syncMode();render();
  if(selected&&people.has(selected))showBranchPopup(selected);
