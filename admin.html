@@ -37,10 +37,18 @@ nav a{background:#e7f1e7;text-decoration:none;padding:10px 13px;color:var(--fore
 details summary{cursor:pointer;font-weight:700;padding:8px 0;color:var(--forest)}
 .notice{background:#f7f4e9;padding:12px 15px;border-radius:9px;font-size:13px}
 @media(max-width:680px){header{padding:15px}header h1{font-size:24px}main{width:calc(100% - 16px);margin:12px auto}.card{padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}button,.button{padding:10px 12px}}
+
+header a.brand{margin-left:0;padding:0;border:0;display:flex;align-items:center;gap:12px;min-width:0;color:#fff;text-decoration:none}
+header a.brand:hover{opacity:.94}
+header .brand-icon{font-size:29px;flex-shrink:0}
+header .brand-text{display:block;min-width:0}
+header .brand-text h1{margin:0}
+header .brand-text p,header .brand-text small{display:block}
+
 </style>
 </head>
 <body>
-<header><span style="font-size:30px">👑</span><div><h1>Våre røtter</h1><small>Administrasjon · Kun godkjent administrator</small></div><a href="./familie.html">← Familierommet</a></header>
+<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><small>Administrator · Privat tilgang</small></span></a><a href="./familie.html">← Familierommet</a></header>
 <main>
 <section id="gate" class="card" style="max-width:640px;margin:35px auto">
  <h2>Sjekker administratortilgang 🔐</h2><p class="muted" id="gateMessage">Kontrollerer din personlige innlogging …</p>
