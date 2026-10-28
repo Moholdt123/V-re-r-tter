@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#173e30">
+<title>Hele slektstreet · Våre røtter</title>
+<style>
+:root{color-scheme:light;--forest:#173e30;--muted:#5f7569;--edge:#d7e5d9;--bg:#f3f7f0;--text:#20372b}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);background:var(--bg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--forest);color:#fff;padding:15px max(17px,calc((100vw - 1330px)/2));display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font:normal 26px Georgia,serif;margin:0}header p{color:#d8e7da;font-size:12px;margin:0}
+header a{margin-left:auto;color:#fff;text-decoration:none;padding:8px 12px;border:1px solid #ffffff66;border-radius:10px;font-size:13px}
+main{width:min(1360px,calc(100% - 25px));margin:20px auto 35px}
+.card{background:white;border:1px solid var(--edge);border-radius:16px;box-shadow:0 5px 19px #254c330a;padding:17px}
+h2{font:normal clamp(25px,4vw,38px) Georgia,serif;margin:4px 0 6px}
+.muted{font-size:13px;color:var(--muted)}.hidden{display:none!important}
+button,select,input{font:inherit}button{background:var(--forest);color:white;border:0;border-radius:9px;padding:9px 13px;font-weight:700;cursor:pointer}
+button.secondary{background:#eaf3e9;color:var(--forest);border:1px solid #cadfce}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7baf87;outline-offset:2px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.searchline{display:grid;grid-template-columns:minmax(175px,1fr) auto;gap:10px;margin:13px 0}
+input[type=search]{width:100%;min-width:0;padding:12px;border-radius:10px;border:1px solid #b8cfbe;background:white}
+#matches{display:flex;flex-wrap:wrap;gap:7px;max-height:140px;overflow:auto}
+#matches button{border:1px solid var(--edge);font-weight:500;background:#f6faf5;color:var(--text);padding:7px 10px}
+#matches button:hover{background:#dfede0}
+#modeBar{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}
+#modeBar button{font-size:13px}
+#modeBar button[aria-pressed=true]{background:var(--forest);color:#fff}
+#modeBar button[aria-pressed=false]{background:#eff6ed;color:var(--forest)}
+#treeWrap{position:relative;border:1px solid #d8e8db;border-radius:15px;background-color:#fbfdfb;background-image:radial-gradient(#dbeadd 1px,transparent 1px);background-size:19px 19px;overflow:hidden}
+#treePort{width:100%;height:min(67vh,740px);min-height:390px;overflow:auto;touch-action:none;overscroll-behavior:contain;position:relative}
+#treePort svg{display:block;margin:auto;max-width:none;user-select:none}
+#mapControls{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;background:#fffe;padding:5px;border-radius:12px;border:1px solid var(--edge)}
+#mapControls button{padding:8px 11px}
+#emptyOverlay{padding:50px 14px;text-align:center;color:var(--muted)}
+#selected{margin-top:13px;padding:14px;border:1px solid var(--edge);border-radius:13px;background:#f8fbf7}
+#selected strong{font-size:18px}#selected .actions{margin-top:10px}
+details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.dot{width:13px;height:13px;border:1px solid #90bb96;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:4px}
+.dot.private{background:#d8ecdc}.dot.old{background:#fff}
+#status{min-height:20px;color:var(--muted);font-size:13px}
+@media(max-width:620px){
+ main{width:calc(100% - 16px);margin:10px auto}.card{padding:12px}
+ header{padding:12px 15px}header h1{font-size:22px}header a{font-size:12px}
+ #treePort{height:63vh;min-height:380px}
+ #mapControls{top:6px;right:6px}#mapControls button{padding:7px 9px;font-size:12px}
+ .searchline{grid-template-columns:minmax(100px,1fr) auto}
+}
+</style>
+</head>
+<body>
+<header><span style="font-size:29px" aria-hidden="true">🌳</span><div><h1>Våre røtter</h1><p>Interaktivt slektskart · Privat familierom</p></div><a href="./familie.html">← Familierommet</a></header>
+<main>
+<section class="card" id="loading"><h2>Åpner slektskartet …</h2><p class="muted" id="loadingMsg">Sjekker innlogging og familietilgang.</p></section>
+<section id="app" class="hidden">
+<div class="card">
+ <h2>Utforsk slekta di 🌿</h2>
+ <p class="muted">Søk etter deg selv eller en annen registrert slektning. Trykk på et navn i kartet for å se personen. De grønne personene er fra din private familiegren.</p>
+ <div class="searchline">
+   <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
+   <button id="showMine" type="button">🌱 Finn meg</button>
+ </div>
+ <div id="matches" aria-live="polite"></div>
+ <div id="modeBar" role="group" aria-label="Visning av slektskart">
+   <button data-mode="family" aria-pressed="true">Hele slekta mi</button>
+   <button data-mode="ancestors" aria-pressed="false">Forfedre</button>
+   <button data-mode="descendants" aria-pressed="false">Etterkommere</button>
+   <button data-mode="archive" aria-pressed="false">Alle registrerte</button>
+ </div>
+ <div class="row" style="justify-content:space-between;margin-bottom:10px">
+  <span id="treeCount" class="muted"></span>
+  <div class="legend"><span><span class="dot private"></span>Min private familiegren</span><span><span class="dot old"></span>Historiske personer</span><span>– – Usikker kobling</span></div>
+ </div>
+ <div id="treeWrap">
+  <div id="mapControls" aria-label="Kartkontroller">
+   <button id="zoomOut" type="button" class="secondary" aria-label="Zoom ut">−</button>
+   <button id="zoomIn" type="button" class="secondary" aria-label="Zoom inn">+</button>
+   <button id="zoomFit" type="button" class="secondary">Vis alt</button>
+  </div>
+  <div id="treePort"><p id="emptyOverlay">Henter slektstreet …</p></div>
+ </div>
+ <p id="status" aria-live="polite"></p>
+ <section id="selected" class="hidden" aria-live="polite">
+  <strong id="selectedName"></strong>
+  <div class="muted" id="selectedMeta"></div>
+  <div class="row actions"><button id="openProfile" type="button">Åpne personprofil</button><button id="focusPerson" type="button" class="secondary">Vis slekt rundt denne</button></div>
+ </section>
+ <details><summary>Hvordan bruker jeg kartet?</summary>
+   <p class="muted">Dra for å flytte kartet, spre to fingre for å zoome inn, eller knip sammen for å zoome ut. Trykk «Vis alt» for å se hele utsnittet. «Hele slekta mi» inkluderer registrerte sidegrener; «Forfedre» viser bare foreldre bakover; «Etterkommere» følger barn videre. Noen slektsgrener er ennå ikke dokumentert, og enkelte eldre koblinger er usikre.</p>
+ </details>
+</div>
+</section>
+</main>
+<script type="module">
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/+esm";
+const db=createClient("https://wtswwjancxiofkjmulvl.supabase.co","sb_publishable_UbN2Fmn7U4J8HRaPZBTxNg_GVIaMm4g",{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+let account=null,people=new Map(),links=[],mine=null,focused=null,mode="family";
+let chart={width:1000,height:600,scale:1},selected=null;
+const displayRoles={mor:"Mor",far:"Far",mormor:"Mormor",morfar:"Morfar",farmor:"Farmor",farfar:"Farfar"};
+function svgEl(tag,attrs){
+  const el=document.createElementNS(NS,tag);
+  for(const [key,value] of Object.entries(attrs||{}))el.setAttribute(key,String(value));
+  return el;
+}
+function escapeSearch(s){return String(s||"").toLocaleLowerCase("nb").trim()}
+function isPrivate(n){return n.kind!=="historical"}
+function titleFor(n){return n.name||n.label||"Ukjent person"}
+function addNode(node){people.set(node.id,node)}
+function connect(from,to,confidence,label){
+ if(!people.has(from)||!people.has(to)||from===to)return;
+ if(links.some(l=>l.from===from&&l.to===to))return;
+ links.push({from,to,confidence:confidence||"familieopplysning",label:label||"forelder_barn"});
+}
+function rebuildGraph(history,ties,self,relatives,bridges){
+  people=new Map();links=[];mine=null;
+  for(const p of history)addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,kind:"historical",dbid:p.id});
+  for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
+  if(!self)return;
+  mine="me";
+  addNode({id:mine,name:self.navn,born:self.fodt_dato?Number(self.fodt_dato.slice(0,4)):null,kind:"self"});
+  const aliases=new Map();
+  for(const b of bridges)if(b.kobling==="samme_person"&&people.has("h:"+b.historisk_person_id))aliases.set(b.relasjon,"h:"+b.historisk_person_id);
+  for(const [slot,label] of Object.entries(displayRoles)){
+    const r=relatives.find(x=>x.relasjon===slot);
+    const name=r?.navn?.trim()||"Ukjent "+label.toLocaleLowerCase("nb");
+    if(aliases.has(slot))continue;
+    addNode({id:"p:"+slot,name,kind:"private",label,slot});
+  }
+  const roleId=slot=>aliases.get(slot)||"p:"+slot;
+  connect(roleId("mor"),mine,"familieopplysning");
+  connect(roleId("far"),mine,"familieopplysning");
+  connect(roleId("mormor"),roleId("mor"),"familieopplysning");
+  connect(roleId("morfar"),roleId("mor"),"familieopplysning");
+  connect(roleId("farmor"),roleId("far"),"familieopplysning");
+  connect(roleId("farfar"),roleId("far"),"familieopplysning");
+  for(const b of bridges){
+    const personId="h:"+b.historisk_person_id;
+    if(b.kobling==="forelder")connect(personId,roleId(b.relasjon),"familieopplysning");
+  }
+}
+function getNeighbors(id,direction){
+ const found=[];
+ for(const l of links){
+  if(direction!=="ancestors"&&l.from===id)found.push(l.to);
+  if(direction!=="descendants"&&l.to===id)found.push(l.from);
+ }
+ return found;
+}
+function reachable(start,direction){
+ const visited=new Set(),queue=[start];
+ for(let i=0;i<queue.length;i++){
+  const id=queue[i];if(visited.has(id)||!people.has(id))continue;
+  visited.add(id);
+  for(const v of getNeighbors(id,direction))if(!visited.has(v))queue.push(v);
+ }
+ return visited;
+}
+function familyMembers(){
+ if(!focused||!people.has(focused))return new Set();
+ if(mode==="archive")return new Set(people.keys());
+ return reachable(focused,mode==="family"?"both":mode);
+}
+function layersFor(ids){
+ const root=ids.has(focused)?focused:[...ids][0];
+ const depth=new Map([[root,0]]);
+ const q=[root];
+ for(let i=0;i<q.length;i++){
+  const id=q[i],gen=depth.get(id);
+  for(const e of links){
+   const nxt=e.from===id?{id:e.to,gen:gen+1}:e.to===id?{id:e.from,gen:gen-1}:null;
+   if(nxt&&ids.has(nxt.id)&&!depth.has(nxt.id)){depth.set(nxt.id,nxt.gen);q.push(nxt.id)}
+  }
+ }
+ // Archive mode may contain disconnected clusters. Place those together in their own bands.
+ let next=Math.max(0,...depth.values())+2;
+ for(const id of ids)if(!depth.has(id)){
+  if(depth.has(id))continue;
+  depth.set(id,next);
+  const cq=[id];for(let k=0;k<cq.length;k++){
+   const curr=cq[k],gen=depth.get(curr);
+   for(const e of links){
+    const nxt=e.from===curr?{id:e.to,gen:gen+1}:e.to===curr?{id:e.from,gen:gen-1}:null;
+    if(nxt&&ids.has(nxt.id)&&!depth.has(nxt.id)){depth.set(nxt.id,nxt.gen);cq.push(nxt.id)}
+   }
+  }
+  next=Math.max(...depth.values())+3;
+ }
+ const byLayer=new Map();
+ for(const [id,g] of depth){if(!byLayer.has(g))byLayer.set(g,[]);byLayer.get(g).push(id)}
+ for(const [g,arr] of byLayer)arr.sort((a,b)=>{
+  const pa=people.get(a),pb=people.get(b);
+  // Keep own private parents and grandparents grouped together when possible.
+  if(isPrivate(pa)!==isPrivate(pb))return isPrivate(pa)?-1:1;
+  const qa=pa.born??0,qb=pb.born??0;if(qa!==qb)return qa-qb;
+  return titleFor(pa).localeCompare(titleFor(pb),"nb");
+ });
+ return byLayer;
+}
+function nodeLabel(name){
+ const words=String(name).trim().split(/\s+/);
+ const lines=[];let line="";
+ for(const w of words){
+  const candidate=line?line+" "+w:w;
+  if(candidate.length>22&&line){lines.push(line);line=w}else line=candidate;
+ }
+ if(line)lines.push(line);
+ const result=lines.slice(0,3);
+ if(lines.length>3)result[2]=result[2].slice(0,19)+"…";
+ return result;
+}
+function render(){
+ const ids=familyMembers(),port=$("treePort");
+ if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
+ const layers=layersFor(ids),keys=[...layers.keys()].sort((a,b)=>a-b);
+ const nodeW=205,nodeH=79,gapX=32,gapY=75,pad=70;
+ const cols=Math.max(...keys.map(k=>layers.get(k).length));
+ const width=Math.max(650,pad*2+cols*(nodeW+gapX)-gapX),height=pad*2+keys.length*(nodeH+gapY)-gapY;
+ const loc=new Map();
+ for(let row=0;row<keys.length;row++){
+  const arr=layers.get(keys[row]),span=arr.length*nodeW+(arr.length-1)*gapX;
+  const left=(width-span)/2;
+  arr.forEach((id,i)=>loc.set(id,{x:left+i*(nodeW+gapX),y:pad+row*(nodeH+gapY)}));
+ }
+ const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Interaktivt slektskart med "+ids.size+" registrerte personer"});
+ const edgeGroup=svgEl("g",{fill:"none"}),nodeGroup=svgEl("g",{});
+ for(const e of links){
+  if(!ids.has(e.from)||!ids.has(e.to))continue;
+  const a=loc.get(e.from),b=loc.get(e.to);
+  if(!a||!b)continue;
+  const x1=a.x+nodeW/2,y1=a.y+nodeH,x2=b.x+nodeW/2,y2=b.y;
+  const half=(y2-y1)/2;
+  const d="M"+x1+" "+y1+" C"+x1+" "+(y1+half)+" "+x2+" "+(y2-half)+" "+x2+" "+y2;
+  edgeGroup.append(svgEl("path",{d,stroke:e.confidence==="usikker"?"#b68f62":"#92bca0","stroke-width":e.confidence==="usikker"?1.5:2.2,"stroke-dasharray":e.confidence==="usikker"?"6 6":"none"}));
+ }
+ svg.append(edgeGroup);
+ for(const id of ids){
+  const n=people.get(id),p=loc.get(id);if(!p)continue;
+  const g=svgEl("g",{transform:"translate("+p.x+" "+p.y+")",tabindex:"0",role:"button","aria-label":"Vis "+titleFor(n)});
+  g.style.cursor="pointer";
+  const fill=id===focused?"#c7e8cc":isPrivate(n)?"#e1f3e4":"#ffffff";
+  g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke:id===selected?"#275b3a":"#8fb99b","stroke-width":id===selected?3:1.6}));
+  const nameLines=nodeLabel(n.name);
+  for(let j=0;j<nameLines.length;j++){
+   const t=svgEl("text",{x:nodeW/2,y:20+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":"600","font-size":nameLines.length>2?11.2:12.8,fill:"#153927"});t.textContent=nameLines[j];g.append(t);
+  }
+  const sub=n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
+  const smaller=svgEl("text",{x:nodeW/2,y:nodeH-11,"text-anchor":"middle","font-family":"system-ui","font-size":"10.5",fill:"#5a7062"});smaller.textContent=sub;g.append(smaller);
+  g.addEventListener("click",()=>choose(id));
+  g.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();choose(id)}});
+  nodeGroup.append(g);
+ }
+ svg.append(nodeGroup);
+ port.replaceChildren(svg);
+ chart={width,height,scale:1};fit();
+ $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
+ $("status").textContent=mode==="archive"?"Alle registrerte, også slektsgrener som ennå ikke er koblet sammen.":"Viser bare registrerte forbindelser. Manglende slektninger kommer fram når de blir lagt til.";
+}
+function setZoom(next,cx,cy){
+ const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
+ const old=chart.scale;next=Math.max(.06,Math.min(3.5,next));
+ if(cx===undefined)cx=port.clientWidth/2;if(cy===undefined)cy=port.clientHeight/2;
+ const anchorX=(port.scrollLeft+cx)/old,anchorY=(port.scrollTop+cy)/old;
+ chart.scale=next;
+ svg.setAttribute("width",String(chart.width*next));
+ svg.setAttribute("height",String(chart.height*next));
+ port.scrollLeft=anchorX*next-cx;port.scrollTop=anchorY*next-cy;
+}
+function fit(){
+ const port=$("treePort");const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
+ chart.scale=1;setZoom(Math.min(1.2,Math.max(.06,ratio)),0,0);
+ port.scrollLeft=Math.max(0,(chart.width*chart.scale-port.clientWidth)/2);
+ port.scrollTop=0;
+}
+function choose(id){
+ if(!people.has(id))return;
+ selected=id;
+ const n=people.get(id);
+ $("selected").classList.remove("hidden");
+ $("selectedName").textContent=n.name;
+ $("selectedMeta").textContent=isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
+ $("openProfile").textContent=isPrivate(n)?"Åpne mitt private familieutkast":"Åpne personprofil";
+ $("openProfile").onclick=()=>{
+  if(isPrivate(n))location.href="./familie.html#family";
+  else location.href="./familie.html#person="+encodeURIComponent(n.dbid);
+ };
+ $("focusPerson").onclick=()=>{focused=id;render();};
+ if(portTreeNode(id))$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function portTreeNode(id){return people.has(id)}
+$("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
+$("zoomOut").onclick=()=>setZoom(chart.scale/1.3);
+$("zoomFit").onclick=fit;
+$("showMine").onclick=()=>{
+ if(!mine)return;$("search").value=people.get(mine).name;
+ focused=mine;mode="family";syncMode();render();choose(mine);
+};
+function syncMode(){
+ for(const b of document.querySelectorAll("#modeBar button"))b.setAttribute("aria-pressed",String(b.dataset.mode===mode));
+}
+for(const b of document.querySelectorAll("#modeBar button"))b.addEventListener("click",()=>{
+ mode=b.dataset.mode;syncMode();render();
+});
+$("search").addEventListener("input",()=>{
+ const q=escapeSearch($("search").value),wrap=$("matches");wrap.replaceChildren();
+ if(!q||q.length<2)return;
+ const matches=[...people.values()].filter(p=>escapeSearch(p.name).includes(q))
+ .sort((a,b)=>(a.id===mine?-1:0)-(b.id===mine?-1:0)||a.name.localeCompare(b.name,"nb")).slice(0,12);
+ for(const p of matches){
+  const b=document.createElement("button");b.type="button";b.textContent=p.name+(isPrivate(p)?" · Privat":"");
+  b.onclick=()=>{focused=p.id;mode="family";syncMode();$("search").value=p.name;wrap.replaceChildren();render();choose(p.id)};
+  wrap.append(b);
+ }
+ if(!matches.length)wrap.textContent="Ingen registrerte treff. Tanta eller kusina di kan mangle i arkivet ennå.";
+});
+// Drag one finger/mouse to pan; pinch two fingers to zoom the map.
+const port=$("treePort");let drag=null,pinch=null;
+function dist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+port.addEventListener("touchstart",e=>{
+ if(e.touches.length>=2){pinch={distance:dist(e.touches[0],e.touches[1]),scale:chart.scale};drag=null}
+ else if(e.touches.length===1){drag={x:e.touches[0].clientX,y:e.touches[0].clientY}}
+},{passive:true});
+port.addEventListener("touchmove",e=>{
+ if(e.touches.length>=2&&pinch){
+  e.preventDefault();const a=e.touches[0],b=e.touches[1],rect=port.getBoundingClientRect();
+  const cx=(a.clientX+b.clientX)/2-rect.left,cy=(a.clientY+b.clientY)/2-rect.top;
+  setZoom(pinch.scale*dist(a,b)/pinch.distance,cx,cy);
+ }else if(e.touches.length===1&&drag){
+  e.preventDefault();const t=e.touches[0];port.scrollLeft-=t.clientX-drag.x;port.scrollTop-=t.clientY-drag.y;
+  drag={x:t.clientX,y:t.clientY};
+ }
+},{passive:false});
+port.addEventListener("touchend",e=>{if(e.touches.length<2)pinch=null;if(e.touches.length===0)drag=null},{passive:true});
+port.addEventListener("wheel",e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();const rect=port.getBoundingClientRect();setZoom(chart.scale*(e.deltaY<0?1.15:1/1.15),e.clientX-rect.left,e.clientY-rect.top)}},{passive:false});
+port.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button===0){drag={x:e.clientX,y:e.clientY};port.setPointerCapture(e.pointerId)}});
+port.addEventListener("pointermove",e=>{
+ if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
+});
+port.addEventListener("pointerup",()=>{drag=null});
+window.addEventListener("resize",()=>{if(people.size)fit()});
+async function start(){
+ const {data:auth,error:authError}=await db.auth.getUser();
+ if(authError||!auth?.user){
+  $("loadingMsg").textContent="Du må logge inn for å se slektskartet.";
+  const a=document.createElement("a");a.href="./familie.html";a.textContent="Logg inn i familierommet";$("loading").append(a);return;
+ }
+ account=auth.user;
+ const {data:member,error:memberError}=await db.from("familie_medlemmer")
+ .select("status").eq("bruker_id",account.id).maybeSingle();
+ if(memberError||member?.status!=="aktiv"){
+  $("loadingMsg").textContent="Du må være et aktivt familiemedlem for å bruke slektskartet.";
+  return;
+ }
+ const [h,t,s,r,b]=await Promise.all([
+  db.from("personer").select("id,navn,fodt_ar,dod_ar").order("navn"),
+  db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet"),
+  db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",account.id).maybeSingle(),
+  db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",account.id),
+  db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id)
+ ]);
+ const err=h.error||t.error||s.error||r.error||b.error;
+ if(err){$("loadingMsg").textContent="Kunne ikke laste slektsdata. "+err.message;return}
+ rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[]);
+ if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}
+ focused=mine||[...people.keys()][0];
+ $("loading").classList.add("hidden");$("app").classList.remove("hidden");
+ if(mine)$("search").placeholder="Søk etter navn (f.eks. ditt eget) …";
+ syncMode();render();if(mine)choose(mine);
+}
+db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT")location.replace("./familie.html")});
+start().catch(e=>$("loadingMsg").textContent="Kunne ikke starte slektskartet: "+e.message);
+</script>
+</body>
+</html>
