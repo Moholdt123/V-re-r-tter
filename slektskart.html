@@ -54,6 +54,8 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
 #branchControls{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin:9px 0 14px}
 #branchControls label{font-size:13px;font-weight:700;color:var(--forest);display:grid;gap:5px}
 #branchControls select{background:#fff;border:1px solid #bdcfbe;border-radius:9px;padding:9px 12px;min-width:142px;color:var(--forest)}
+#branchControls select:focus-visible{outline:3px solid #8eba9a;outline-offset:2px}
+#treePort svg path[data-from]{stroke-linejoin:round}
 #branchControls .hint{font-size:12px;color:var(--muted);flex:1;min-width:160px}
 .branchKey{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .branchChip{display:inline-block;width:14px;height:14px;border-radius:4px}
@@ -99,7 +101,14 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
      <option value="all">Alle generasjoner</option>
     </select>
   </label>
-  <span class="hint">Start gjerne med tre generasjoner. Velg «Alle generasjoner» når du vil se hele slekta.</span>
+    <label for="mapSpacing">Avstand mellom personene
+    <select id="mapSpacing">
+      <option value="normal">God avstand</option>
+      <option value="airy">Veldig luftig</option>
+      <option value="extra" selected>Ekstra stor avstand</option>
+    </select>
+  </label>
+  <span class="hint">Dra kartet sidelengs og oppover for å utforske. «Vis alt» viser oversikten i miniatyr, mens + gir større navn og tydeligere linjer.</span>
  </div>
 
  <div class="row" style="justify-content:space-between;margin-bottom:10px">
@@ -246,7 +255,12 @@ function nodeLabel(name){
  return result;
 }
 
-let branchSide="both",generationLimit="2";
+let branchSide="both",generationLimit="2",mapSpacing="extra";
+function spacingConfig(){
+ if(mapSpacing==="normal")return {nodeW:194,nodeH:84,gapX:75,gapY:135,pad:85};
+ if(mapSpacing==="airy")return {nodeW:205,nodeH:90,gapX:145,gapY:195,pad:100};
+ return {nodeW:215,nodeH:96,gapX:235,gapY:265,pad:120};
+}
 
 function rootDistances(root,blocked,ids){
  const distances=new Map();
@@ -304,7 +318,7 @@ function orderWithinBranch(arr){
 }
 function computeMapLayout(){
  const state=filterLayoutNodes(),{ids,split,sideMap,levels}=state;
- const nodeW=194,nodeH=81,gapX=32,gapY=65,pad=70;
+ const {nodeW,nodeH,gapX,gapY,pad}=spacingConfig();
  const keys=[...levels.keys()].filter(k=>levels.get(k).some(id=>ids.has(id))).sort((a,b)=>a-b);
  if(!keys.length)return {...state,keys,loc:new Map(),width:650,height:400,nodeW,nodeH};
  const loc=new Map();
@@ -324,9 +338,9 @@ function computeMapLayout(){
    maxShared=Math.max(maxShared,groups.shared.length);
    bands.set(gen,groups);
   }
-  const section=(count)=>Math.max(265,count*(nodeW+gapX)+24);
-  const leftW=branchSide==="paternal"?140:section(maxM),rightW=branchSide==="maternal"?140:section(maxF);
-  const middleW=maxShared?section(maxShared):60;
+  const section=(count)=>Math.max(340,count*(nodeW+gapX)+80);
+  const leftW=branchSide==="paternal"?160:section(maxM),rightW=branchSide==="maternal"?160:section(maxF);
+  const middleW=maxShared?section(maxShared):180;
   const leftX=pad,rightX=pad+leftW+middleW;
   width=pad*2+leftW+middleW+rightW;
   height=pad*2+keys.length*(nodeH+gapY)-gapY+55;
@@ -362,8 +376,8 @@ function highlightConnections(){
  const svg=$("treePort").querySelector("svg");if(!svg)return;
  for(const path of svg.querySelectorAll("path[data-from]")){
   const direct=selected&&(path.getAttribute("data-from")===selected||path.getAttribute("data-to")===selected);
-  path.setAttribute("opacity",direct?"0.95":selected?"0.13":"0.30");
-  path.setAttribute("stroke-width",direct?"3.2":"1.5");
+  path.setAttribute("opacity",direct?"1":selected?"0.72":"0.85");
+  path.setAttribute("stroke-width",direct?"4.5":"2.8");
  }
 }
 
@@ -389,8 +403,8 @@ function render(){
   const half=Math.max(24,(y2-y1)/2);
   const d="M"+x1+" "+y1+" C"+x1+" "+(y1+half)+" "+x2+" "+(y2-half)+" "+x2+" "+y2;
   const branch=sideMap.get(e.from)||sideMap.get(e.to);
-  const color=e.confidence==="usikker"?"#ad977a":branch==="maternal"?"#5b99ad":branch==="paternal"?"#b4985c":"#84a98c";
-  edges.append(svgEl("path",{d,stroke:color,"stroke-width":1.5,"stroke-dasharray":e.confidence==="usikker"?"6 6":"none",opacity:0.30,"data-from":e.from,"data-to":e.to}));
+  const color=e.confidence==="usikker"?"#856847":branch==="maternal"?"#35748d":branch==="paternal"?"#8c6834":"#35774c";
+  edges.append(svgEl("path",{d,stroke:color,"stroke-width":2.8,"stroke-dasharray":e.confidence==="usikker"?"10 7":"none",opacity:0.85,"data-from":e.from,"data-to":e.to}));
  }
  svg.append(edges);
  const nodes=svgEl("g",{});
@@ -404,33 +418,48 @@ function render(){
   g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke,"stroke-width":id===selected?3:1.5}));
   const nameLines=nodeLabel(n.name);
   for(let j=0;j<nameLines.length;j++){
-   const t=svgEl("text",{x:nodeW/2,y:21+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":600,"font-size":nameLines.length>2?11:12.5,fill:"#173e30"});
+   const t=svgEl("text",{x:nodeW/2,y:21+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":600,"font-size":nameLines.length>2?12:14,fill:"#173e30"});
    t.textContent=nameLines[j];g.append(t);
   }
   const sub=n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
-  const smaller=svgEl("text",{x:nodeW/2,y:nodeH-10,"text-anchor":"middle","font-family":"system-ui","font-size":10.5,fill:"#5a7062"});
+  const smaller=svgEl("text",{x:nodeW/2,y:nodeH-10,"text-anchor":"middle","font-family":"system-ui","font-size":11.5,fill:"#435d4a"});
   smaller.textContent=sub;g.append(smaller);
   g.addEventListener("click",()=>choose(id));
   g.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();choose(id)}});
   nodes.append(g);
  }
  svg.append(nodes);port.replaceChildren(svg);
- chart={width,height,scale:1};fit();highlightConnections();
+ chart={width,height,scale:1};autoFrame(loc,ids,nodeW,nodeH);highlightConnections();
  $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
+ $("treeCount").title="Ved mye slekt vises en utsnitt i lesbar størrelse. Trykk Vis alt for å zoome ut til hele oversikten.";
  $("status").textContent=split?
-  "Mors familie vises til venstre (blått), fars familie til høyre (gyllent). Trykk på et navn for å fremheve forbindelsene. Velg flere generasjoner når du vil utforske lenger tilbake.":
+  "Mors familie vises til venstre (blått), fars familie til høyre (gyllent). Linjene viser slektskoblinger: trykk på et navn for å fremheve de nærmeste. Dra kartet for å utforske.":
   mode==="archive"?"Viser alle registrerte personer, også slektsgrener som ennå ikke er koblet sammen.":
   "Viser registrerte slektsforbindelser. Bruk «🌱 Finn meg» for å se mors og fars side separat.";
 }
 function setZoom(next,cx,cy){
  const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
- const old=chart.scale;next=Math.max(.06,Math.min(3.5,next));
+ const old=chart.scale;next=Math.max(.01,Math.min(3.5,next));
  if(cx===undefined)cx=port.clientWidth/2;if(cy===undefined)cy=port.clientHeight/2;
  const anchorX=(port.scrollLeft+cx)/old,anchorY=(port.scrollTop+cy)/old;
  chart.scale=next;
  svg.setAttribute("width",String(chart.width*next));
  svg.setAttribute("height",String(chart.height*next));
  port.scrollLeft=anchorX*next-cx;port.scrollTop=anchorY*next-cy;
+}
+function autoFrame(loc,ids,nodeW,nodeH){
+ const view=$("treePort");
+ const fitRatio=Math.min((view.clientWidth-24)/chart.width,(view.clientHeight-24)/chart.height);
+ if(fitRatio>=0.45){fit();return}
+ // Et veldig stort slektstre skal starte med lesbare navn, ikke krympes til uleselig miniatyr.
+ const readable=Math.max(0.55,Math.min(1,view.clientWidth/(nodeW*2.1)));
+ chart.scale=1;setZoom(readable,0,0);
+ const anchor=ids.has(selected)?selected:ids.has(mine)?mine:ids.has(focused)?focused:[...ids][0];
+ const pos=loc.get(anchor);
+ if(pos){
+   view.scrollLeft=Math.max(0,(pos.x+nodeW/2)*chart.scale-view.clientWidth/2);
+   view.scrollTop=Math.max(0,(pos.y+nodeH/2)*chart.scale-view.clientHeight*0.65);
+ }
 }
 function fit(){
  const port=$("treePort");const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
@@ -456,6 +485,7 @@ function choose(id,scrollToDetails=true){
 }
 function portTreeNode(id){return people.has(id)}
 $("branchSide").addEventListener("change",e=>{branchSide=e.target.value;render()});
+$("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
 $("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
 $("zoomOut").onclick=()=>setZoom(chart.scale/1.3);
