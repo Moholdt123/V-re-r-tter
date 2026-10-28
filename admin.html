@@ -276,8 +276,15 @@ $("personForm").addEventListener("submit",async e=>{
   navn:$("personName").value,fodt_ar:$("personBorn").value,dod_ar:$("personDied").value,
   kildehenvisning:$("personSource").value,kort_biografi:$("personBio").value,confirm_deceased:$("personConfirmed").checked};
  try{
-  const data=await invoke("save_person",payload);notice("personStatus",data.message||"Lagret.");
-  await refresh();
+  const data=await invoke("save_person",payload);
+  if(data.person_id){
+    $("personSearch").value="";
+    await refresh();
+    populatePersonSelect();
+    $("personSelect").value=data.person_id;
+    loadPerson();
+  }else await refresh();
+  notice("personStatus",data.message||"Lagret.");
  }catch(err){notice("personStatus",err.message,true)}
  finally{btn.disabled=false}
 });
