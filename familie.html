@@ -243,11 +243,11 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
         <p id="storyStatus" class="status" aria-live="polite"></p>
         <div class="divider"></div>
         <h3>Bilder og dokumenter</h3>
-        <p class="muted">Legg til fotografier, brev eller avisutklipp. Maks 15 MB per fil.</p>
+        <p class="muted">Legg til fotografier, brev, avisutklipp eller slektsdokumenter i det private familiearkivet. Word-filer med opplysninger om nålevende skal ikke deles i familiepassord-visningen. Maks 15 MB per fil.</p>
         <div id="files"></div>
         <form id="uploadForm">
-          <label for="upload">Velg bilde eller PDF</label>
-          <input id="upload" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+          <label for="upload">Velg bilde, PDF eller Word-dokument (.doc)</label>
+          <input id="upload" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,.doc" required>
           <button type="submit" style="margin-top:12px">Legg til i personarkivet</button>
         </form><p id="uploadStatus" class="status" aria-live="polite"></p>
       </div>
@@ -635,12 +635,17 @@ async function loadFiles(personId){
 $("uploadForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!chosen||!user)return;
  const file=$("upload").files?.[0];if(!file)return;
- const valid=["image/jpeg","image/png","image/webp","application/pdf"];
- if(file.size>15728640||!valid.includes(file.type)){notice("uploadStatus","Velg JPG, PNG, WebP eller PDF på maks 15 MB.",true);return}
+ const isWordDoc=file.name.toLowerCase().endsWith(".doc")&&
+  (!file.type||file.type==="application/msword"||file.type==="application/octet-stream");
+ const contentType=isWordDoc?"application/msword":file.type;
+ const valid=["image/jpeg","image/png","image/webp","application/pdf","application/msword"];
+ if(file.size>15728640||!valid.includes(contentType)){
+  notice("uploadStatus","Velg JPG, PNG, WebP, PDF eller Word (.doc) på maks 15 MB.",true);return
+ }
  const btn=e.target.querySelector("button");btn.disabled=true;notice("uploadStatus","Laster opp ...");
  const name=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-95);
  const path=user.id+"/"+crypto.randomUUID()+"-"+name;
- const {error:uploadError}=await db.storage.from("familiearkiv").upload(path,file,{upsert:false,contentType:file.type});
+ const {error:uploadError}=await db.storage.from("familiearkiv").upload(path,file,{upsert:false,contentType});
  if(uploadError){notice("uploadStatus",authErrorMessage(uploadError),true);btn.disabled=false;return}
  const {error:saveError}=await db.from("arkivfiler").insert({person_id:chosen,lastet_opp_av:user.id,lagringssti:path,filnavn:file.name});
  if(saveError){await db.storage.from("familiearkiv").remove([path]);notice("uploadStatus",authErrorMessage(saveError),true)}
