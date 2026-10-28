@@ -254,7 +254,7 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
   <div class="row actions"><button id="openProfile" type="button" class="hidden" disabled>Kun innloggede kan se personprofil</button><button id="descendPerson" type="button">🌿 Vis barn og etterkommere</button><button id="ancestorsPerson" type="button" class="secondary">↑ Forfedre</button><button id="focusPerson" type="button" class="secondary">↔ Hele slekta</button><button id="branchBackBelow" type="button" class="secondary" disabled>← Tilbake</button></div>
  </section>
  <details><summary>Hvordan bruker jeg kartet?</summary>
-   <p class="muted">Dra for å flytte kartet, spre to fingre for å zoome inn, eller knip sammen for å zoome ut. Trykk «Vis alt» for å åpne fullskjermkartet i lesbar størrelse. Trykk på en gammel slektning og velg «Barn og etterkommere» for å åpne grenene til barna, barnebarna og videre. Bruk «Tilbake» for å gå til forrige gren. Der kan du dra langt for å utforske, bruke «Oversikt» for en miniatyrvisning og «Til start» for å finne tilbake. «Slekt rundt person» inkluderer registrerte slektslinjer; «Forfedre» viser bare foreldre bakover; «Etterkommere» følger barn videre. Familiekoden gir bare tilgang til avdøde historiske personer. Noen gamle koblinger er usikre.</p>
+   <p class="muted">På PC: Bruk musehjulet direkte over kartet for å zoome inn og ut, eller dra med musen for å flytte deg rundt. På mobil: Dra med én finger eller knip med to fingre for å zoome. Trykk «Vis alt» for å åpne fullskjermkartet i lesbar størrelse. Trykk på en gammel slektning og velg «Barn og etterkommere» for å åpne grenene til barna, barnebarna og videre. Bruk «Tilbake» for å gå til forrige gren. Der kan du dra langt for å utforske, bruke «Oversikt» for en miniatyrvisning og «Til start» for å finne tilbake. «Slekt rundt person» inkluderer registrerte slektslinjer; «Forfedre» viser bare foreldre bakover; «Etterkommere» følger barn videre. Familiekoden gir bare tilgang til avdøde historiske personer. Noen gamle koblinger er usikre.</p>
  </details>
  </div>
 </div>
@@ -1059,7 +1059,17 @@ port.addEventListener("touchmove",e=>{
  }
 },{passive:false});
 port.addEventListener("touchend",e=>{if(e.touches.length<2)pinch=null;if(e.touches.length===0)drag=null},{passive:true});
-port.addEventListener("wheel",e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();const rect=port.getBoundingClientRect();setZoom(chart.scale*(e.deltaY<0?1.15:1/1.15),e.clientX-rect.left,e.clientY-rect.top)}},{passive:false});
+// Musehjulet zoomer direkte når pekeren er over selve slektskartet.
+ // Utenfor kartflaten fungerer vanlig sideskrolling som før.
+port.addEventListener("wheel",e=>{
+ const svg=port.querySelector("svg");
+ if(!svg||!e.deltaY)return;
+ e.preventDefault();
+ const rect=port.getBoundingClientRect();
+ const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?port.clientHeight:1);
+ const zoomFactor=Math.exp(-Math.max(-350,Math.min(350,delta))*0.0015);
+ setZoom(chart.scale*zoomFactor,e.clientX-rect.left,e.clientY-rect.top);
+},{passive:false});
 port.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button===0){drag={x:e.clientX,y:e.clientY};port.setPointerCapture(e.pointerId)}});
 port.addEventListener("pointermove",e=>{
  if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
