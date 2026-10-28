@@ -171,6 +171,7 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
     <p class="muted">🔒 Bare du kan lese og endre disse navnene. De deles ikke med andre medlemmer eller den offentlige forsiden. Familieforbindelsene er foreløpig basert på familieopplysninger, ikke kontrollert i primærkilder.</p>
   </section>
 
+  <section class="card" style="margin-bottom:18px;background:#eff7ed;border:1px solid #c5ddc9"><div class="eyebrow">Hele slekten på ett kart</div><h3>🌳 Se hele slektstreet</h3><p class="muted">Finn ditt eget navn, oppdag registrerte forfedre og sidegrener og zoom ut for å se hele kartet. Kun for innloggede familiemedlemmer.</p><a href="./slektskart.html" style="display:inline-block;background:var(--dark);color:#fff;padding:13px 17px;border-radius:10px;text-decoration:none;font-weight:700">Åpne hele slektskartet ↗</a></section>
   <div class="layout">
     <section class="card">
       <h3>Finn en slektning</h3><p class="muted">Trykk på en person for å se familieforhold, historier og bilder.</p>
@@ -378,6 +379,7 @@ async function updateState(){
  await loadOwnFamilyBranch();
  await loadOwnHistoricalBridges();
  await loadPrivate();
+ if(location.hash==="#family")$("privateBranchPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("emailForm").addEventListener("submit",async e=>{
  e.preventDefault();
@@ -404,6 +406,12 @@ async function loadPrivate(){
  persons=ps.data||[];ties=rel.data||[];
  renderPrivateHistoricalBridges();
  renderPeople();
+ const hashPerson=new URLSearchParams(location.hash.slice(1)).get("person");
+ if(hashPerson&&persons.some(p=>p.id===hashPerson)){
+  await choosePerson(hashPerson);
+  $("personContent").scrollIntoView({behavior:"smooth",block:"start"});
+  return;
+ }
  if(chosen&&persons.some(p=>p.id===chosen))await choosePerson(chosen);
  else if(persons.length)await choosePerson(persons.find(p=>p.navn.includes("Ingvald Andreas"))?.id||persons[0].id);
 }
