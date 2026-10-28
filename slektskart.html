@@ -108,10 +108,18 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
 #selectedRelation{font-size:17px!important}
 #popupTrace{max-height:88px}
 
+
+header a.brand{margin-left:0;padding:0;border:0;display:flex;align-items:center;gap:12px;min-width:0;color:#fff;text-decoration:none}
+header a.brand:hover{opacity:.94}
+header .brand-icon{font-size:29px;flex-shrink:0}
+header .brand-text{display:block;min-width:0}
+header .brand-text h1{margin:0}
+header .brand-text p,header .brand-text small{display:block}
+
 </style>
 </head>
 <body>
-<header><span style="font-size:29px" aria-hidden="true">🌳</span><div><h1>Våre røtter</h1><p>Interaktivt slektskart · Privat familierom</p></div><a href="./familie.html">← Familierommet</a></header>
+<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Slektskart · Personlig innlogging</p></span></a><a href="./familie.html">← Familierommet</a></header>
 <main>
 <section class="card" id="loading"><h2>Åpner slektskartet …</h2><p class="muted" id="loadingMsg">Sjekker innlogging og familietilgang.</p></section>
 <section id="app" class="hidden">
