@@ -1,35 +1,73 @@
 <!doctype html>
 <html lang="nb">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <meta name="theme-color" content="#173e30">
-  <meta name="description" content="Våre røtter – familiens private slektstre og minnebok">
-  <title>Våre røtter 🌳</title>
-  <style>
-    :root{color-scheme:light;--forest:#173e30;--paper:#f7f8f3;--text:#273b31;--muted:#577366}
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100dvh;background:var(--paper);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;padding:24px}
-    main{max-width:560px;width:100%;background:#fff;border:1px solid #dce9df;border-radius:24px;padding:clamp(24px,5vw,52px);box-shadow:0 12px 35px #1835260e;text-align:center}
-    .symbol{font-size:58px;line-height:1}
-    h1{font:normal clamp(38px,6vw,50px) Georgia,serif;margin:16px 0 8px;color:var(--forest)}
-    p{margin:12px 0;color:var(--muted)}
-    a.btn{display:inline-block;margin:20px 0 8px;padding:16px 25px;background:var(--forest);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:17px}
-    a.btn:hover{background:#245b43}a.btn:focus-visible{outline:3px solid #9cbca5;outline-offset:3px}
-    .note{background:#eff5ec;padding:16px;border-radius:12px;font-size:14px;text-align:left;margin-top:24px}
-    small{display:block;margin-top:22px;color:#718578}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#173e30">
+<meta name="description" content="Våre røtter – familiens slektstre">
+<title>Våre røtter 🌳 – Familiens slektstre</title>
+<style>
+:root{color-scheme:light;--forest:#173e30;--deep:#102f23;--paper:#f4f7f0;--text:#263d2e;--muted:#5d7262}
+*{box-sizing:border-box}
+body{margin:0;min-height:100dvh;background:var(--paper);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--forest);padding:14px max(20px,calc((100vw - 1020px)/2));display:flex;align-items:center;gap:12px;justify-content:space-between;color:white}
+header .brand{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none;font:normal 24px Georgia,serif}
+header .brand span{font-size:31px}
+header .login{font-size:13px;color:#fff;text-decoration:none;border:1px solid #ffffff6b;border-radius:10px;padding:9px 13px}
+a:focus-visible{outline:3px solid #b6d8b9;outline-offset:3px}
+main{max-width:1020px;margin:auto;padding:clamp(18px,4vw,42px) 17px 60px}
+.hero{background:linear-gradient(115deg,#fff 64%,#e7f3e6);border:1px solid #d3e5d3;border-radius:25px;padding:clamp(24px,5vw,55px);box-shadow:0 12px 40px #173e3010}
+.eyebrow{letter-spacing:2px;text-transform:uppercase;font-weight:750;font-size:12px;color:#397451}
+h1{font:normal clamp(37px,6.8vw,60px)/1.12 Georgia,serif;color:var(--forest);margin:11px 0 15px;max-width:650px}
+p{color:var(--muted);margin:10px 0}
+.lead{font-size:clamp(16px,2vw,19px);max-width:640px}
+.actions{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:15px;margin-top:29px}
+.action{border:1px solid #d0e0d2;border-radius:16px;background:#fff;text-decoration:none;color:var(--forest);padding:22px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:180px}
+.action.primary{background:var(--forest);color:#fff;border-color:var(--forest)}
+.action b{font-size:21px}
+.action span{font-size:14px;color:#5a735f}
+.action.primary span{color:#d3e6d5}
+.action em{font-size:14px;font-style:normal;font-weight:750;align-self:flex-start;background:#e8f1e6;border-radius:9px;padding:8px 13px;margin-top:auto}
+.action.primary em{background:#fff;color:var(--forest)}
+.action:hover{box-shadow:0 12px 25px #183e3022;transform:translateY(-1px)}
+.simple{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;margin:26px 0}
+.simple article{padding:18px 16px;background:#fff;border:1px solid #dae7d8;border-radius:14px}
+.simple strong{display:block;color:var(--forest);margin-bottom:5px}
+.simple p{font-size:13px;margin:0}
+footer{color:#647b6b;font-size:12px;text-align:center}
+@media(max-width:660px){header{padding:12px 15px}.actions,.simple{grid-template-columns:1fr}.action{min-height:140px}.hero{border-radius:17px}.simple{gap:9px}}
+</style>
 </head>
 <body>
-  <main>
-    <div class="symbol" aria-hidden="true">🌳</div>
-    <h1>Våre røtter</h1>
-    <p>Historiene som binder familien sammen.</p>
-    <p>Velkommen til familiens slektstre og minnebok. For å se slektsopplysninger, historier og bilder må du være et godkjent familiemedlem.</p>
-    <a class="btn" href="./familie.html">🔐 Åpne familierommet</a>
-    <div class="note">❤️ Første gang? Bruk innloggingslenken du får på e-post. Familiens invitasjonskode brukes når du blir medlem. Trenger du hjelp, kan du spørre den som inviterte deg.</div>
-    <small>Private familieopplysninger vises bare etter innlogging.</small>
-  </main>
+<header>
+<a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span aria-hidden="true">🌳</span>Våre røtter</a>
+<a class="login" href="./familie.html">🔐 Personlig innlogging</a>
+</header>
+<main>
+<section class="hero">
+  <div class="eyebrow">Familiens slektstre</div>
+  <h1>Oppdag hvem vi kommer fra. 🌿</h1>
+  <p class="lead">Ett familiepassord er alt du trenger for å utforske den historiske slekta, se generasjonene og følge familiegrenene.</p>
+  <div class="actions">
+    <a class="action primary" href="./familiekode.html">
+      <b>🌳 Åpne slektstreet</b>
+      <span>For familien. Skriv inn familiepassordet og utforsk hele det historiske kartet.</span>
+      <em>Gå til slektstreet →</em>
+    </a>
+    <a class="action" href="./familie.html">
+      <b>🌱 Finn meg i slekta</b>
+      <span>For deg med personlig innlogging. Se din egen gren og private familieopplysninger.</span>
+      <em>Logg inn →</em>
+    </a>
+  </div>
+</section>
+<section class="simple" aria-label="Slik fungerer det">
+ <article><strong>1. Skriv familiepassordet</strong><p>Du får tilgang til det historiske slektskartet.</p></article>
+ <article><strong>2. Velg en person</strong><p>Søk etter slektninger eller åpne oversikten over alle historiske personer.</p></article>
+ <article><strong>3. Utforsk videre</strong><p>Trykk på en person for å se forfedre, barn og andre slektsgrener.</p></article>
+</section>
+<footer>🔒 Opplysninger om nålevende personer er ikke tilgjengelige med familiepassordet. Redigering krever administratorinnlogging.</footer>
+</main>
 </body>
 </html>
