@@ -38,6 +38,25 @@ button:disabled{opacity:.5;cursor:not-allowed}.hidden{display:none!important}.st
 #treeport{height:360px;overflow:auto;touch-action:none;background:radial-gradient(#dcebdc .7px,transparent .7px) 0 0/18px 18px}
 #treeport svg{display:block;max-width:none}
 footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid var(--edge);font-size:12px}
+
+.private-branch{display:grid;gap:15px;margin:20px 0 16px}
+.private-ancestor-level{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.private-ancestor-side{background:#f4f8f1;border:1px solid #e2ede3;border-radius:13px;padding:10px;min-width:0}
+.private-ancestor-side h4{text-align:center;font-size:12px;color:var(--muted);margin:0 0 9px}
+.private-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.private-parent-level{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.private-person{display:block;width:100%;padding:12px 8px;text-align:center;color:var(--dark);border:1px solid #a0c6a8;background:white;border-radius:12px;font-weight:400;min-width:0}
+.private-person strong{display:block;font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.private-person small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.private-tree-line{text-align:center;color:#69a17b;font-weight:700;font-size:20px;line-height:1}
+.private-me{background:#e4f3e5;border:2px solid #8bbb97;border-radius:14px;text-align:center;padding:15px;max-width:290px;margin:auto}
+.private-me strong{display:block;font-size:17px}
+.private-me small{color:var(--muted)}
+#privateBranchForm .two{margin-bottom:10px}
+#privateBranchForm label{margin:9px 0 5px}
+#privateBranchForm input{font-size:14px}
+@media(max-width:520px){.private-ancestor-level{gap:7px}.private-ancestor-side{padding:7px}.private-pair{gap:5px}.private-person{padding:9px 5px}.private-person strong{font-size:11px}.private-person small{font-size:10px}.private-parent-level{gap:8px}}
+
 @media(max-width:810px){.layout{grid-template-columns:1fr}.member-list{max-height:220px}#treeport{height:440px}}
 @media(max-width:520px){.card{padding:18px}header{padding:14px 18px}header h1{font-size:22px}header a{font-size:11px}.two{grid-template-columns:1fr}}
 </style>
@@ -88,6 +107,43 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
     </details>
     <p id="livingSelfStatus" class="status" aria-live="polite"></p>
   </section>
+
+  <section class="card" id="privateBranchPanel" style="margin-bottom:18px">
+    <div class="eyebrow">Personlig og privat · Familieopplysninger til kontroll</div>
+    <h3>Min familiegren 🌳</h3>
+    <p class="muted">Her er et <strong>privat utkast</strong> til din nærmeste familie basert på opplysninger du tidligere har delt. Foreldre og besteforeldre er ikke med i det felles slektstreet ennå. Trykk på et navn for å rette det.</p>
+    <div class="private-branch" aria-label="Din private familiegren">
+      <div class="private-ancestor-level">
+        <div class="private-ancestor-side"><h4>Mors familie</h4><div class="private-pair" id="myMaternalGrandparents"></div></div>
+        <div class="private-ancestor-side"><h4>Fars familie</h4><div class="private-pair" id="myPaternalGrandparents"></div></div>
+      </div>
+      <div class="private-tree-line" aria-hidden="true">│<br>↓</div>
+      <div class="private-parent-level" id="myParents"></div>
+      <div class="private-tree-line" aria-hidden="true">│<br>↓</div>
+      <div class="private-me" id="mySelfNode"></div>
+    </div>
+    <details id="privateBranchEditor">
+      <summary style="cursor:pointer;font-weight:700;padding:10px 0">Rett navnene i mitt private slektstre</summary>
+      <form id="privateBranchForm">
+        <div class="two">
+          <div><label for="branch-mor">Mor</label><input id="branch-mor" maxlength="250" autocomplete="off"></div>
+          <div><label for="branch-far">Far</label><input id="branch-far" maxlength="250" autocomplete="off"></div>
+        </div>
+        <div class="two">
+          <div><label for="branch-mormor">Mormor</label><input id="branch-mormor" maxlength="250" autocomplete="off"></div>
+          <div><label for="branch-morfar">Morfar</label><input id="branch-morfar" maxlength="250" autocomplete="off"></div>
+        </div>
+        <div class="two">
+          <div><label for="branch-farmor">Farmor</label><input id="branch-farmor" maxlength="250" autocomplete="off"></div>
+          <div><label for="branch-farfar">Farfar</label><input id="branch-farfar" maxlength="250" autocomplete="off"></div>
+        </div>
+        <button type="submit" style="margin-top:12px">Lagre familieutkastet privat</button>
+      </form>
+    </details>
+    <p id="privateBranchStatus" class="status" role="status" aria-live="polite"></p>
+    <p class="muted">🔒 Bare du kan lese og endre disse navnene. De deles ikke med andre medlemmer eller den offentlige forsiden. Familieforbindelsene er foreløpig basert på familieopplysninger, ikke kontrollert i primærkilder.</p>
+  </section>
+
   <div class="layout">
     <section class="card">
       <h3>Finn en slektning</h3><p class="muted">Trykk på en person for å se familieforhold, historier og bilder.</p>
@@ -162,6 +218,7 @@ async function loadOwnLivingProfile(){
   $("livingSelfBirth").value=data.fodt_dato||"";
   const prettyDate=data.fodt_dato?new Date(data.fodt_dato+"T12:00:00").toLocaleDateString("nb-NO",{day:"numeric",month:"long",year:"numeric"}):"ikke oppgitt";
   $("livingSelfPreview").textContent=data.navn+" · Født: "+prettyDate;
+  renderOwnFamilyBranch();
   notice("livingSelfStatus","");
 }
 $("livingSelfForm").addEventListener("submit",async event=>{
@@ -183,10 +240,62 @@ $("livingSelfForm").addEventListener("submit",async event=>{
   btn.disabled=false;
 });
 
+
+const privateFamilySlots=[
+  ["mormor","Mormor"],["morfar","Morfar"],
+  ["farmor","Farmor"],["farfar","Farfar"],
+  ["mor","Mor"],["far","Far"]
+];
+let privateFamilyData=new Map();
+function myBranchNode(slot,label){
+  const b=document.createElement("button");b.type="button";b.className="private-person";
+  const name=privateFamilyData.get(slot);
+  b.append(text("strong",name||label),text("small",label+(name?" · Privat":" · Mangler navn")));
+  b.addEventListener("click",()=>{
+    $("privateBranchEditor").open=true;
+    $("branch-"+slot).focus();
+    $("branch-"+slot).scrollIntoView({block:"nearest"});
+  });
+  return b;
+}
+function renderOwnFamilyBranch(){
+  const maternal=$("myMaternalGrandparents"),paternal=$("myPaternalGrandparents"),parents=$("myParents");
+  maternal.replaceChildren(myBranchNode("mormor","Mormor"),myBranchNode("morfar","Morfar"));
+  paternal.replaceChildren(myBranchNode("farmor","Farmor"),myBranchNode("farfar","Farfar"));
+  parents.replaceChildren(myBranchNode("mor","Mor"),myBranchNode("far","Far"));
+  const me=$("livingSelfName").value.trim()||"Deg";
+  $("mySelfNode").replaceChildren(text("strong",me),text("small","Din private profil"));
+}
+async function loadOwnFamilyBranch(){
+  if(!user||profile?.status!=="aktiv")return;
+  const {data,error}=await db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",user.id);
+  if(error){notice("privateBranchStatus","Kunne ikke laste familieutkastet: "+authErrorMessage(error),true);return}
+  privateFamilyData=new Map((data||[]).map(row=>[row.relasjon,row.navn||""]));
+  for(const [slot] of privateFamilySlots)$("branch-"+slot).value=privateFamilyData.get(slot)||"";
+  renderOwnFamilyBranch();
+}
+$("privateBranchForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!user||profile?.status!=="aktiv")return;
+  const button=event.target.querySelector("button");
+  button.disabled=true;
+  notice("privateBranchStatus","Lagrer privat ...");
+  const entries=privateFamilySlots.map(([slot])=>({
+    bruker_id:user.id,
+    relasjon:slot,
+    navn:$("branch-"+slot).value.trim()||null,
+    oppdatert:new Date().toISOString()
+  }));
+  const {error}=await db.from("familiegren_utkast").upsert(entries,{onConflict:"bruker_id,relasjon"});
+  if(error){notice("privateBranchStatus","Kunne ikke lagre: "+authErrorMessage(error),true);}
+  else{await loadOwnFamilyBranch();notice("privateBranchStatus","Familieutkastet er lagret. Bare du kan se det.");}
+  button.disabled=false;
+});
+
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
- if(!user){show("login");hide("join");hide("private");return}
+ if(!user){privateFamilyData.clear();show("login");hide("join");hide("private");return}
  const {data:p,error}=await db.from("familie_medlemmer").select("visningsnavn,status,rolle").eq("bruker_id",user.id).maybeSingle();
  if(error){show("login");hide("join");hide("private");notice("loginStatus","Kunne ikke sjekke tilgang: "+authErrorMessage(error),true);return}
  profile=p;
@@ -195,6 +304,7 @@ async function updateState(){
  if(p?.status!=="aktiv"){show("join");show("joinForm");hide("private");$("joiningAs").textContent="E-post bekreftet: "+(user.email||"");return}
  hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
  await loadOwnLivingProfile();
+ await loadOwnFamilyBranch();
  await loadPrivate();
 }
 $("emailForm").addEventListener("submit",async e=>{
