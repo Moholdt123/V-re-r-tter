@@ -119,6 +119,11 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
  <h2>Utforsk slekta di 🌿</h2>
  <p class="muted">Se mors og fars aner i hver sin tydelige gren. Trykk på en slektning for å utforske personens barn, etterkommere eller eldre forfedre. «Hele slekta mi» viser dine registrerte forfedre – andre sidegrener åpnes fra enkeltpersoner.</p>
  <p id="researchShortcut" style="margin:3px 0 14px;font-size:13px"><a href="./familie.html#forskningsspor" style="color:var(--forest);font-weight:700;text-underline-offset:3px">🔎 Forskningsspor og familieopplysninger</a> <span class="muted">– mulige slektsfunn som ikke er bekreftet</span></p>
+ <div id="medievalBranchShortcuts" style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:5px 0 15px">
+  <button id="seeKarenAncestors" type="button">🌿 Karens slekt mot 1400-tallet</button>
+  <button id="startAtSigurd" type="button">🏰 Start hos Sigurd Bonde</button>
+  <span class="muted" style="font-size:12px">Bokas anerekke – stiplede linjer markerer forbindelser som ikke er bekreftet.</span>
+ </div>
  <div class="searchline">
    <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
    <button id="showMine" type="button">🌱 Finn meg</button>
@@ -865,6 +870,11 @@ function exploreBranch(id,nextMode){
  requestAnimationFrame(()=>focusReadable(id));
  updateBranchControls();
 }
+// Snarveier til den middelalderske anerekken i familieheftet, Vedlegg II.
+const karenHistoricalId="h:98760455-ab59-46a4-b213-2a19a05a21be";
+const sigurdHistoricalId="h:f35a714f-621d-4cb4-8cb1-1d1c355c2f15";
+$("seeKarenAncestors").addEventListener("click",()=>exploreBranch(karenHistoricalId,"ancestors"));
+$("startAtSigurd").addEventListener("click",()=>exploreBranch(sigurdHistoricalId,"descendants"));
 function previousBranch(){
  const last=branchHistory.pop();
  if(!last)return;
@@ -1102,6 +1112,12 @@ async function start(){
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
  if(mine)$("search").placeholder="Søk etter navn (f.eks. ditt eget) …";
  syncMode();render();if(mine)choose(mine,false);
+ const params=new URLSearchParams(location.hash.slice(1));
+ const requested=params.get("person");
+ if(requested&&people.has("h:"+requested)){
+   const requestedMode=params.get("visning")==="forfedre"?"ancestors":"descendants";
+   exploreBranch("h:"+requested,requestedMode);
+ }
 }
 db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT")location.replace("./familie.html")});
 start().catch(e=>$("loadingMsg").textContent="Kunne ikke starte slektskartet: "+e.message);
