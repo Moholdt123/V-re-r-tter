@@ -52,3 +52,32 @@ Oppdatert 28. oktober 2026. Denne filen beskriver oppsettet som er observert i S
 - <https://supabase.com/docs/guides/auth/users>
 - <https://supabase.com/docs/guides/database/postgres/row-level-security>
 - <https://supabase.com/docs/guides/storage/security/access-control>
+
+
+## Private profiler for levende familiemedlemmer – 28. oktober 2026
+
+I Supabase er migrasjonen \`private_living_member_profiles\` gjennomført. Tabellen
+\`public.levende_profiler\` inneholder personlige selvprofiler som er knyttet til
+\`auth.users.id\`. RLS tillater bare at den innloggede, aktive eieren leser,
+oppretter, oppdaterer eller sletter sin egen profil. \`anon\` har ingen
+tabelltilgang. Andre familiemedlemmer får ikke lese profilen, selv om de har
+aktivt medlemskap.
+
+Pilotbrukerens selvprofil er lagt direkte i denne private tabellen med
+opplysninger fra familiens eksisterende, private overføringsnotat. **Ingen
+personnavn eller fødselsdatoer om levende familiemedlemmer er lagt inn i
+frontendkoden eller det offentlige slektstreet.** Ikke kopier profilene inn i
+den delte \`personer\`-tabellen, fordi denne per nå kan leses av alle aktive
+familiemedlemmer.
+
+En ny seksjon «Min profil» i \`familie.html\` leser \`levende_profiler\`
+etter innlogging, og lar eieren rette egen profil. Endringen er lagt til på
+\`main\` og i dette PR-utkastet. Profilen vises **ikke** i familietreet
+foreløpig. Familieforbindelser og felles synlighet krever separat, avklart
+personvernløsning før flere levende personer legges inn.
+
+Verifisert med Supabase SQL: eieren så én profil; ingen sesjon og
+annen brukeridentitet så null. \`anon\` hadde null tabellrettigheter, og
+fire RLS-policies var installert. Koden i den oppdaterte \`familie.html\` er
+syntakssjekket, men faktisk autentisert mobilvisning av den nye
+profilseksjonen må fremdeles prøves i nettleseren.
