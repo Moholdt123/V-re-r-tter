@@ -137,6 +137,7 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
    <button id="showMine" type="button">🌳 Til start</button>
  </div>
  <div id="matches" aria-live="polite"></div>
+ <p id="historicalFocusLabel" class="muted" aria-live="polite">Velg en historisk person for å utforske slekta.</p>
  <div id="modeBar" role="group" aria-label="Visning av slektskart">
    <button data-mode="family" aria-pressed="true">Slekt rundt person</button>
    <button data-mode="ancestors" aria-pressed="false">Forfedre</button>
@@ -699,6 +700,7 @@ function render(){
  chart={width,height,scale:1};autoFrame(loc,ids,nodeW,nodeH);highlightConnections();
  updateBranchControls();
  $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
+ $("historicalFocusLabel").textContent=mode==="archive"?"Viser alle registrerte historiske personer.":(mode==="ancestors"?"Forfedre til ":mode==="descendants"?"Etterkommere av ":"Familien rundt ")+(people.get(focused)?.name||"valgt person")+". Endre person ved å søke etter et navn.";
  $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
  $("status").textContent=layout.ancestryTree?
   "Historiske forfedre til valgt person. Foreldregrenene tegnes hver for seg der informasjonen er kjent. Stiplede linjer betyr usikker kobling.":
@@ -992,10 +994,15 @@ async function displayTree(data){
  rebuildGraph(data.persons,data.relationships);
  if(!people.size){$("loadingMsg").textContent="Ingen historiske personer er registrert.";return;}
  // Begynn med en historisk person som har en stor registrert anetavle.
- const leaves=[...people.keys()].filter(id=>!links.some(x=>x.from===id));
- const ranked=(leaves.length?leaves:[...people.keys()])
-  .map(id=>({id,depth:reachable(id,"ancestors").size,year:Number(people.get(id).born||0)}))
-  .sort((a,b)=>b.depth-a.depth||b.year-a.year||a.id.localeCompare(b.id));
+ const ranked=[...people.keys()]
+  .map(id=>({
+    id,parents:new Set(links.filter(e=>e.to===id).map(e=>e.from)).size,
+    depth:reachable(id,"ancestors").size,
+    descendants:reachable(id,"descendants").size,
+    year:Number(people.get(id).born||0)
+  }))
+  .sort((a,b)=>Number(b.parents>=2)-Number(a.parents>=2)||
+    b.depth-a.depth||b.descendants-a.descendants||b.year-a.year||a.id.localeCompare(b.id));
  homePerson=ranked[0].id;focused=homePerson;selected=homePerson;
  mode="ancestors";generationLimit="all";branchHistory=[];
  $("generationLimit").value="all";$("fullGenerationLimit").value="all";
