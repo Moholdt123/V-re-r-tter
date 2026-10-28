@@ -63,6 +63,29 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
 .branchChip.f{background:#f7eacf;border:1px solid #d1af72}
 #treePort{background-image:radial-gradient(#dce9dd 1px,transparent 1px)}
 
+
+/* Fullskjerm utforsking: hele visningsflaten brukes, selve slektskartet får beholde størrelsen. */
+body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
+#fullScreenBar{display:none}
+#treeWrap.immersive{position:fixed!important;inset:0!important;width:100vw;height:100dvh;max-width:none;max-height:none;z-index:9999;border:0;border-radius:0;box-shadow:none;background:#f5faf6;display:flex;flex-direction:column}
+#treeWrap.immersive #fullScreenBar{display:flex;flex-direction:column;gap:9px;flex:0 0 auto;background:#f9fcf8;border-bottom:1px solid #c6daca;padding:calc(env(safe-area-inset-top,0px) + 9px) 12px 10px;box-shadow:0 2px 12px #183d2916;z-index:4}
+#fullScreenBar .fullRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#fullScreenBar .fullRow strong{font-size:15px;color:var(--forest);margin-right:auto}
+#fullScreenBar button{font-size:12px;padding:9px 10px;white-space:nowrap}
+#fullScreenBar select{font-size:13px;border:1px solid #c4dbc9;border-radius:8px;color:var(--forest);padding:9px 8px;background:#fff;min-width:0;flex:1}
+#fullScreenBar label{font-size:12px;min-width:0;flex:1;display:flex;gap:4px;align-items:center;color:var(--forest);font-weight:600}
+#fullScreenBar label select{width:100%}
+#treeWrap.immersive #treePort{height:auto!important;min-height:0;max-height:none;flex:1 1 auto;width:100%;touch-action:none;overscroll-behavior:contain}
+#treeWrap.immersive #mapControls{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);right:12px}
+#treeWrap.immersive #zoomFit{display:none}
+#treeWrap.immersive #mapControls button{font-size:16px;padding:12px 16px}
+@media (max-width:540px){
+ #fullScreenBar .fullRow strong{font-size:14px}
+ #fullScreenBar button{padding:8px}
+ #fullScreenBar label{flex:1}
+ #treeWrap.immersive #mapControls button{padding:12px 17px}
+}
+
 </style>
 </head>
 <body>
@@ -72,7 +95,7 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
 <section id="app" class="hidden">
 <div class="card">
  <h2>Utforsk slekta di 🌿</h2>
- <p class="muted">Søk etter deg selv eller en annen registrert slektning. Trykk på et navn i kartet for å se personen. De grønne personene er fra din private familiegren.</p>
+ <p class="muted">Søk etter deg selv eller en annen registrert slektning. Trykk på et navn i kartet for å se personen. De grønne personene er fra din private familiegren. Velg «Vis alt» for å utforske på hele mobilskjermen.</p>
  <div class="searchline">
    <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
    <button id="showMine" type="button">🌱 Finn meg</button>
@@ -108,7 +131,7 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
       <option value="extra" selected>Ekstra stor avstand</option>
     </select>
   </label>
-  <span class="hint">Dra kartet sidelengs og oppover for å utforske. «Vis alt» viser oversikten i miniatyr, mens + gir større navn og tydeligere linjer.</span>
+  <span class="hint">Trykk «Vis alt» for å åpne slektstreet i fullskjerm. Dra langt i alle retninger for å utforske generasjonene.</span>
  </div>
 
  <div class="row" style="justify-content:space-between;margin-bottom:10px">
@@ -116,6 +139,28 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
   <div class="legend"><span class="branchKey"><span class="branchChip m"></span>Mors side</span><span class="branchKey"><span class="branchChip f"></span>Fars side</span><span>– – Usikker kobling</span></div>
  </div>
  <div id="treeWrap">
+
+  <div id="fullScreenBar" aria-label="Kontroller for slektskart i fullskjerm">
+   <div class="fullRow">
+    <strong>🌳 Hele slektstreet</strong>
+    <button id="fullHome" type="button" class="secondary">🌱 Til meg</button>
+    <button id="fullOverview" type="button" class="secondary">Oversikt</button>
+    <button id="fullClose" type="button">✕ Lukk</button>
+   </div>
+   <div class="fullRow">
+    <label for="fullBranchSide">Side
+      <select id="fullBranchSide">
+       <option value="both">Begge sider</option><option value="maternal">Mors side</option><option value="paternal">Fars side</option>
+      </select>
+    </label>
+    <label for="fullGenerationLimit">Generasjoner
+      <select id="fullGenerationLimit">
+       <option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="all">Alle</option>
+      </select>
+    </label>
+   </div>
+  </div>
+
   <div id="mapControls" aria-label="Kartkontroller">
    <button id="zoomOut" type="button" class="secondary" aria-label="Zoom ut">−</button>
    <button id="zoomIn" type="button" class="secondary" aria-label="Zoom inn">+</button>
@@ -130,7 +175,7 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
   <div class="row actions"><button id="openProfile" type="button">Åpne personprofil</button><button id="focusPerson" type="button" class="secondary">Vis slekt rundt denne</button></div>
  </section>
  <details><summary>Hvordan bruker jeg kartet?</summary>
-   <p class="muted">Dra for å flytte kartet, spre to fingre for å zoome inn, eller knip sammen for å zoome ut. Trykk «Vis alt» for å se hele utsnittet. «Hele slekta mi» inkluderer registrerte sidegrener; «Forfedre» viser bare foreldre bakover; «Etterkommere» følger barn videre. Noen slektsgrener er ennå ikke dokumentert, og enkelte eldre koblinger er usikre.</p>
+   <p class="muted">Dra for å flytte kartet, spre to fingre for å zoome inn, eller knip sammen for å zoome ut. Trykk «Vis alt» for å åpne fullskjermkartet i lesbar størrelse. Der kan du dra langt for å utforske, bruke «Oversikt» for en miniatyrvisning og «Til meg» for å finne tilbake. «Hele slekta mi» inkluderer registrerte sidegrener; «Forfedre» viser bare foreldre bakover; «Etterkommere» følger barn videre. Noen slektsgrener er ennå ikke dokumentert, og enkelte eldre koblinger er usikre.</p>
  </details>
 </div>
 </section>
@@ -259,7 +304,7 @@ let branchSide="both",generationLimit="2",mapSpacing="extra";
 function spacingConfig(){
  if(mapSpacing==="normal")return {nodeW:194,nodeH:84,gapX:75,gapY:135,pad:85};
  if(mapSpacing==="airy")return {nodeW:205,nodeH:90,gapX:145,gapY:195,pad:100};
- return {nodeW:215,nodeH:96,gapX:235,gapY:265,pad:120};
+ return {nodeW:215,nodeH:96,gapX:300,gapY:425,pad:150};
 }
 
 function rootDistances(root,blocked,ids){
@@ -429,17 +474,70 @@ function render(){
   nodes.append(g);
  }
  svg.append(nodes);port.replaceChildren(svg);
+ lastMapLayout=layout;
  chart={width,height,scale:1};autoFrame(loc,ids,nodeW,nodeH);highlightConnections();
  $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
- $("treeCount").title="Ved mye slekt vises en utsnitt i lesbar størrelse. Trykk Vis alt for å zoome ut til hele oversikten.";
+ $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
  $("status").textContent=split?
   "Mors familie vises til venstre (blått), fars familie til høyre (gyllent). Linjene viser slektskoblinger: trykk på et navn for å fremheve de nærmeste. Dra kartet for å utforske.":
   mode==="archive"?"Viser alle registrerte personer, også slektsgrener som ennå ikke er koblet sammen.":
   "Viser registrerte slektsforbindelser. Bruk «🌱 Finn meg» for å se mors og fars side separat.";
 }
+
+let immersive=false,lastMapLayout=null;
+function centerAt(id){
+ const pos=lastMapLayout?.loc.get(id),port=$("treePort");
+ if(!pos)return;
+ const zoom=chart.scale;
+ port.scrollLeft=Math.max(0,(pos.x+lastMapLayout.nodeW/2)*zoom-port.clientWidth/2);
+ port.scrollTop=Math.max(0,(pos.y+lastMapLayout.nodeH/2)*zoom-port.clientHeight*0.6);
+}
+function focusReadable(id){
+ const port=$("treePort");
+ const readable=Math.max(0.8,Math.min(1.15,port.clientWidth/310));
+ chart.scale=1;
+ setZoom(readable,0,0);
+ centerAt(id||mine||focused);
+}
+function setImmersive(on){
+ if(immersive===on)return;
+ immersive=on;
+ $("treeWrap").classList.toggle("immersive",on);
+ document.body.classList.toggle("tree-fullscreen",on);
+ $("zoomFit").textContent=on?"Lukk":"Vis alt";
+ $("zoomFit").setAttribute("aria-expanded",String(on));
+ if(on){
+  $("generationLimit").value="all";
+  generationLimit="all";
+  $("fullBranchSide").value=branchSide;
+  $("fullGenerationLimit").value="all";
+  render();
+  requestAnimationFrame(()=>focusReadable(mine||focused));
+ }else{
+  render();
+ }
+}
+$("fullClose").addEventListener("click",()=>setImmersive(false));
+$("fullHome").addEventListener("click",()=>{
+ if(mine&&people.has(mine)){
+  focused=mine;mode="family";syncMode();render();
+ }
+ focusReadable(mine||focused);
+});
+$("fullOverview").addEventListener("click",fit);
+$("fullBranchSide").addEventListener("change",e=>{
+ branchSide=e.target.value;$("branchSide").value=branchSide;
+ render();requestAnimationFrame(()=>focusReadable(mine||focused));
+});
+$("fullGenerationLimit").addEventListener("change",e=>{
+ generationLimit=e.target.value;$("generationLimit").value=generationLimit;
+ render();requestAnimationFrame(()=>focusReadable(mine||focused));
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&immersive)setImmersive(false)});
+
 function setZoom(next,cx,cy){
  const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
- const old=chart.scale;next=Math.max(.01,Math.min(3.5,next));
+ const old=chart.scale;next=Math.max(.001,Math.min(3.5,next));
  if(cx===undefined)cx=port.clientWidth/2;if(cy===undefined)cy=port.clientHeight/2;
  const anchorX=(port.scrollLeft+cx)/old,anchorY=(port.scrollTop+cy)/old;
  chart.scale=next;
@@ -463,7 +561,7 @@ function autoFrame(loc,ids,nodeW,nodeH){
 }
 function fit(){
  const port=$("treePort");const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
- chart.scale=1;setZoom(Math.min(1.2,Math.max(.06,ratio)),0,0);
+ chart.scale=1;setZoom(Math.min(1.2,Math.max(.001,ratio)),0,0);
  port.scrollLeft=Math.max(0,(chart.width*chart.scale-port.clientWidth)/2);
  port.scrollTop=0;
 }
@@ -489,7 +587,7 @@ $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
 $("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
 $("zoomOut").onclick=()=>setZoom(chart.scale/1.3);
-$("zoomFit").onclick=fit;
+$("zoomFit").onclick=()=>setImmersive(!immersive);
 $("showMine").onclick=()=>{
  if(!mine)return;$("search").value=people.get(mine).name;
  focused=mine;mode="family";syncMode();render();choose(mine);
