@@ -122,6 +122,17 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
 #chooseAnother{margin:10px 0}
 @media(max-width:600px){#startChoices{grid-template-columns:1fr}}
 
+
+/* Privat familiegren: tydelig forskjell mellom familiekode og personlig innlogging. */
+#privateSelfHint{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:16px 18px;margin:12px 0 17px;background:#edf7ef;border:1px solid #bad9bf;border-radius:14px}
+#privateSelfHint strong{font-size:16px;color:var(--forest)}
+#privateSelfHint p{margin:5px 0 0;font-size:13px;color:var(--muted);max-width:650px}
+#privateSelfHint a{display:inline-block;padding:11px 16px;background:var(--forest);border-radius:10px;color:#fff;text-decoration:none;font-size:13px;font-weight:750}
+#privateSelfHint a:hover{background:#245b43}
+#privateSelfHint a:focus-visible{outline:3px solid #83a98b;outline-offset:2px}
+#matches .private-search-tip{padding:11px 13px;border:1px solid #c7ddc8;border-radius:10px;background:#f1f9f0;color:var(--forest);width:100%;font-size:13px}
+#matches .private-search-tip a{font-weight:750;color:var(--forest);text-underline-offset:3px}
+
 </style>
 </head>
 <body>
@@ -150,6 +161,13 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
  </div>
  <div id="matches" aria-live="polite"></div>
  <p id="historicalFocusLabel" class="muted" aria-live="polite">Velg en historisk person for å utforske slekta.</p>
+ <aside id="privateSelfHint" aria-label="Finn ditt eget private slektstre">
+  <div>
+   <strong>🌱 Leter du etter deg selv?</strong>
+   <p>Med familiepassordet kan du søke blant avdøde historiske personer. Du og andre nålevende familiemedlemmer er beskyttet. Logg inn med din personlige e-postkonto for å se deg selv og din private slektsgren.</p>
+  </div>
+  <a href="./familie.html">🔐 Logg inn og finn meg</a>
+ </aside>
 
  <section id="startPicker" aria-label="Velg slektsgren" class="hidden">
    <h3>🌳 Hvilken historisk slekt vil du utforske?</h3>
@@ -1039,7 +1057,17 @@ $("search").addEventListener("input",()=>{
   b.onclick=()=>openHistoricalPerson(p.id);
   wrap.append(b);
  }
- if(!matches.length)wrap.textContent="Ingen registrerte historiske personer med dette navnet.";
+ if(!matches.length){
+  const tip=document.createElement("div");
+  tip.className="private-search-tip";
+  const message=document.createElement("span");
+  message.textContent="Ingen treff blant avdøde historiske personer. Leter du etter deg selv eller en levende slektning? ";
+  const link=document.createElement("a");
+  link.href="./familie.html";
+  link.textContent="Bruk personlig innlogging for å finne deg selv.";
+  tip.append(message,link);
+  wrap.append(tip);
+ }
 });
 // Drag one finger/mouse to pan; pinch two fingers to zoom the map.
 const port=$("treePort");let drag=null,pinch=null;
