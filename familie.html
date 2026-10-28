@@ -124,7 +124,7 @@ let user=null,profile=null,persons=[],ties=[],chosen=null,treeZoom=1,treeSize={w
 const personById=()=>new Map(persons.map(p=>[p.id,p]));
 function text(tag,content,cls){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=content;return el}
 function nameFor(id){return persons.find(p=>p.id===id)?.navn||"Ukjent"}
-function authErrorMessage(error){const msg=error?.message||String(error);return msg.includes("rate")?"For mange forsøk. Prøv igjen senere.":msg}
+function authErrorMessage(error){const code=error?.code||"";const msg=error?.message||String(error);if(code==="email_address_not_authorized"||msg.includes("email_address_not_authorized"))return "E-posttjenesten er foreløpig begrenset til testadresser. Familieadministrator må sette opp e-postutsendelse (SMTP) i Supabase før resten av familien kan logge inn.";if(code==="over_email_send_rate_limit"||msg.toLowerCase().includes("rate limit"))return "For mange e-poster er sendt på kort tid. Prøv igjen senere.";return msg}
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
