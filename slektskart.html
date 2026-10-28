@@ -696,7 +696,7 @@ function render(){
  $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
  $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
  $("status").textContent=layout.ancestryTree?
-  "Dette er foreldrelinjene bakover i tid. Mors og fars grener er ordnet hver for seg. Noen registrerte koblinger er usikre – stiplede linjer er ikke bekreftet. Trykk på en person for å utforske barn og sidegrener.":
+  "Dette er de registrerte forfedrene dine. Mors og fars grener er tegnet separat; det betyr ikke at alle forbindelser er dokumentert. Stiplede linjer markerer usikre opplysninger. Velg en slektning for å utforske barn og sidegrener.":
   mode==="archive"?"Hele arkivet inneholder også personer uten bekreftet kobling til deg. Velg Mine to slektsgrener for en ryddigere visning.":
   "Viser registrerte slektsforbindelser. Bruk «🌱 Finn meg» for å se mors og fars side separat.";
 }
@@ -805,7 +805,7 @@ function descendantIds(id){
 function updateBranchControls(){
  const n=people.get(focused);
  const label=n?(mode==="descendants"?"Etterkommere fra ":mode==="ancestors"?"Forfedre til ":"Slekta rundt ")+n.name:"Slektstreet";
- $("branchTrailLine").textContent=branchHistory.length?"Utforsker: "+label:"Trykk på en person for å følge en familiegren";
+ $("branchTrailLine").textContent=focused===mine?"Mors og fars forfedre – to separate slektsgrener":branchHistory.length?"Utforsker: "+label:"Valgt slekt: "+label;
  const backAvailable=branchHistory.length>0;
  for(const buttonId of ["fullBack","popupBack","branchBackBelow"])$(buttonId).disabled=!backAvailable;
 }
@@ -892,7 +892,7 @@ function setImmersive(on){
   $("fullBranchSide").value=branchSide;
   $("fullGenerationLimit").value="all";
   render();
-  requestAnimationFrame(()=>focusReadable(mine||focused));
+  requestAnimationFrame(()=>focusReadable(focused||mine));
  }else{
   render();
  }
@@ -989,7 +989,11 @@ function syncMode(){
  for(const b of document.querySelectorAll("#modeBar button"))b.setAttribute("aria-pressed",String(b.dataset.mode===mode));
 }
 for(const b of document.querySelectorAll("#modeBar button"))b.addEventListener("click",()=>{
- mode=b.dataset.mode;syncMode();render();
+ mode=b.dataset.mode;
+ // "Mine to slektsgrener" skal alltid vise faktisk mor/far, selv etter utforsking av en eldre slektning.
+ if(mode==="family"&&mine){focused=mine;selected=mine;branchHistory=[];branchSide="both";$("branchSide").value="both";$("fullBranchSide").value="both";}
+ syncMode();render();
+ if(mine&&mode==="family")requestAnimationFrame(()=>focusReadable(mine));
 });
 $("search").addEventListener("input",()=>{
  const q=escapeSearch($("search").value),wrap=$("matches");wrap.replaceChildren();
