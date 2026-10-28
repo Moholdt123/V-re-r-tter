@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#173e30">
+<title>Administrator · Våre røtter</title>
+<style>
+:root{--forest:#173e30;--leaf:#327353;--text:#243b2e;--muted:#5e7568;--edge:#d7e7d8;--bg:#f5f8f3;--panel:#eff6ef;--error:#a23933}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--forest);color:white;padding:19px max(17px,calc((100vw - 1100px)/2));display:flex;gap:15px;align-items:center;flex-wrap:wrap}
+header h1{font:normal 28px Georgia,serif;margin:0}header small{display:block;color:#cbdfd0}
+header a{margin-left:auto;color:#fff;text-decoration:none;padding:9px 13px;border:1px solid #ffffff77;border-radius:10px}
+main{width:min(1100px,calc(100% - 24px));margin:24px auto 55px}
+h2{font:normal clamp(27px,4.5vw,38px) Georgia,serif;margin:4px 0 10px}h3{font:normal 24px Georgia,serif;margin:0 0 10px}h4{margin:0 0 8px}
+p{margin:9px 0}.muted{font-size:13px;color:var(--muted)}.hidden{display:none!important}
+.card{padding:22px;background:#fff;border:1px solid var(--edge);border-radius:18px;box-shadow:0 8px 23px #23473209;margin:15px 0}
+.eyebrow{text-transform:uppercase;color:var(--leaf);letter-spacing:1.4px;font-size:11px;font-weight:800}
+.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.space{justify-content:space-between}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:17px 0}
+.stat{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:14px}
+.stat b{display:block;font-size:27px;color:var(--forest)}.stat span{font-size:12px;color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+label{display:block;font-weight:700;font-size:13px;margin:11px 0 5px}
+input,select,textarea{display:block;width:100%;background:white;color:var(--text);border:1px solid #c1d3c4;border-radius:9px;font:inherit;padding:11px}
+textarea{min-height:92px;resize:vertical}
+button,.button{font:inherit;display:inline-block;border:0;border-radius:9px;background:var(--forest);color:#fff;font-weight:700;padding:10px 14px;cursor:pointer;text-decoration:none}
+button.secondary,.button.secondary{border:1px solid var(--edge);background:#edf4ed;color:var(--forest)}
+button.danger{background:#8e3831}button:disabled{opacity:.5;cursor:not-allowed}
+a{color:#286645}.status{font-size:13px;min-height:18px;margin:9px 0;color:var(--leaf)}.error{color:var(--error)}
+nav{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 18px}
+nav a{background:#e7f1e7;text-decoration:none;padding:10px 13px;color:var(--forest);font-weight:700;font-size:13px;border-radius:10px}
+.unit{padding:12px 0;border-bottom:1px solid var(--edge)}
+.unit:last-child{border:0}.unit small{color:var(--muted);display:block}
+.badge{display:inline-block;background:#e1f0e3;color:#285c3e;padding:3px 10px;border-radius:20px;font-size:12px}
+.contentList{max-height:330px;overflow-y:auto}.scrollList{max-height:350px;overflow:auto}
+details summary{cursor:pointer;font-weight:700;padding:8px 0;color:var(--forest)}
+.notice{background:#f7f4e9;padding:12px 15px;border-radius:9px;font-size:13px}
+@media(max-width:680px){header{padding:15px}header h1{font-size:24px}main{width:calc(100% - 16px);margin:12px auto}.card{padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}button,.button{padding:10px 12px}}
+</style>
+</head>
+<body>
+<header><span style="font-size:30px">👑</span><div><h1>Våre røtter</h1><small>Administrasjon · Kun godkjent administrator</small></div><a href="./familie.html">← Familierommet</a></header>
+<main>
+<section id="gate" class="card" style="max-width:640px;margin:35px auto">
+ <h2>Sjekker administratortilgang 🔐</h2><p class="muted" id="gateMessage">Kontrollerer din personlige innlogging …</p>
+ <p><a href="./familie.html">Gå til familierommet</a></p>
+</section>
+<div id="dashboard" class="hidden">
+ <div class="row space">
+  <div><div class="eyebrow">Familieadministrator</div><h2>Administratorpanelet 🌳</h2><p class="muted">Her bestemmer du over det historiske slektstreet, medlemmer og familiekoden.</p></div>
+  <button class="secondary" type="button" id="reload">↻ Oppdater</button>
+ </div>
+ <div class="grid" aria-label="Oversikt">
+  <div class="stat"><b id="countPeople">–</b><span>Historiske personer</span></div>
+  <div class="stat"><b id="countConnections">–</b><span>Slektsforbindelser</span></div>
+  <div class="stat"><b id="countMembers">–</b><span>Medlemskontoer</span></div>
+  <div class="stat"><b id="countMemories">–</b><span>Historier og filer</span></div>
+ </div>
+ <nav aria-label="Hopp til administratorfunksjoner">
+  <a href="#password">🔐 Passord</a><a href="#members">👨‍👩‍👧 Medlemmer</a><a href="#persons">🌳 Personer</a><a href="#links">🔗 Slektsforbindelser</a><a href="#stories">📷 Arkiv</a><a href="#privacy">🛡️ Personvern</a>
+ </nav>
+ <p id="globalStatus" class="status" aria-live="polite"></p>
+ <section class="card" id="password">
+  <div class="eyebrow">Bare du kan bestemme</div><h3>Familiepassord 🔐</h3>
+  <p class="muted">Én kode familien kan skrive inn for å lese historiske slektsopplysninger uten e-post. Å bytte kode gjør tidligere familieøkter ugyldige.</p>
+  <form id="passForm">
+   <label for="pass">Nytt familiepassord (6–20 bokstaver eller tall)</label>
+   <input id="pass" type="text" autocomplete="off" maxlength="24" minlength="6" placeholder="Velg et passord familien husker" required style="max-width:370px">
+   <button type="submit" style="margin-top:12px">Lagre familiepassord</button>
+  </form>
+  <p id="passStatus" class="status" aria-live="polite"></p>
+  <p class="muted">Del denne lenken privat med familien: <a href="./familiekode.html">Åpne slektstreet med familiekode</a>.</p>
+ </section>
+ <section class="card" id="members">
+  <div class="eyebrow">Tilgang og sikkerhet</div><h3>Familiemedlemmer 👨‍👩‍👧‍👦</h3>
+  <p class="muted">Her kan du åpne eller sperre personlige medlemskontoer. Folk som bare bruker familiekoden har ikke egne kontoer i denne listen. Administratorrollen kan ikke endres med familiekoden.</p>
+  <div id="memberList" class="scrollList"><p class="muted">Henter kontoer …</p></div>
+  <p id="memberStatus" class="status" aria-live="polite"></p>
+ </section>
+ <section class="card" id="persons">
+  <div class="eyebrow">Rediger slektstreet</div><h3>Historiske personer 🌳</h3>
+  <p class="muted">Du kan legge til og rette opplysninger om <strong>avdøde</strong> slektninger. Levende familiemedlemmer skal fortsatt bare registreres i private løsninger med avklart deling.</p>
+  <div class="two">
+   <div><label for="personSearch">Finn personen du vil redigere</label><input id="personSearch" type="search" placeholder="Søk navn …"></div>
+   <div><label for="personSelect">Velg en eksisterende person</label><select id="personSelect"><option value="">➕ Ny historisk person</option></select></div>
+  </div>
+  <form id="personForm">
+   <div class="two">
+    <div><label for="personName">Fullt navn</label><input id="personName" maxlength="250" required></div>
+    <div><label for="personBorn">Fødselsår (hvis kjent)</label><input id="personBorn" type="number" min="1000" max="2026"></div>
+    <div><label for="personDied">Dødsår</label><input id="personDied" type="number" min="1000" max="2026"></div>
+    <div><label for="personSource">Kildehenvisning</label><input id="personSource" maxlength="1200" placeholder="F.eks. kirkebok, gravminne eller familienotat"></div>
+   </div>
+   <label for="personBio">Kort biografi (valgfritt)</label><textarea id="personBio" maxlength="3500"></textarea>
+   <label class="row" style="margin:14px 0"><input id="personConfirmed" type="checkbox" style="width:auto;margin:0"> Jeg bekrefter at personen er avdød (kreves når du legger til en ny person)</label>
+   <div class="row"><button type="submit">Lagre personen</button><button class="secondary" type="button" id="newPerson">+ Ny person</button></div>
+  </form>
+  <p id="personStatus" class="status" aria-live="polite"></p>
+ </section>
+ <section class="card" id="links">
+  <div class="eyebrow">Foreldre og barn</div><h3>Koble sammen personer 🔗</h3>
+  <p class="muted">Velg en forelder og et barn i det historiske registeret. Du kan merke en kobling «Usikker» når kildene er uklare. Systemet prøver å hindre sirkelkoblinger.</p>
+  <form id="linkForm">
+   <div class="two">
+    <div><label for="linkParent">Forelder</label><select id="linkParent" required></select></div>
+    <div><label for="linkChild">Barn</label><select id="linkChild" required></select></div>
+    <div><label for="linkCertainty">Dokumentasjon</label><select id="linkCertainty"><option value="familieopplysning">Familieopplysning</option><option value="usikker">Usikker</option></select></div>
+    <div><label for="linkSource">Kilde (valgfritt)</label><input id="linkSource" maxlength="1000" placeholder="Hvor kommer opplysningen fra?"></div>
+   </div>
+   <button type="submit" style="margin-top:14px">Lagre slektskobling</button>
+  </form>
+  <p id="linkStatus" class="status" aria-live="polite"></p>
+  <details><summary>Se og eventuelt fjerne en feil kobling</summary>
+   <label for="linkExisting">Eksisterende forelder–barn-kobling</label><select id="linkExisting"></select>
+   <button class="danger" type="button" id="removeLink" style="margin-top:11px">Fjern valgt kobling</button>
+   <p class="muted">Du blir bedt om å bekrefte før slektsforbindelsen fjernes.</p>
+  </details>
+ </section>
+ <section class="card" id="stories">
+  <div class="eyebrow">Oversikt over familiearkivet</div><h3>Bilder og historier 📷</h3>
+  <p class="muted">Se hvilke historier og filer som er registrert. Trykk på personnavnet for å åpne personprofilen i familierommet. Egen godkjenningskø for nytt innhold er ikke bygget ennå.</p>
+  <div class="two">
+    <div><h4>Nyeste historier</h4><div id="storyList" class="contentList"></div></div>
+    <div><h4>Nyeste filer</h4><div id="fileList" class="contentList"></div></div>
+  </div>
+ </section>
+ <section class="card" id="privacy">
+  <div class="eyebrow">Sikkerhet og personvern</div><h3>Hvem kan se hva? 🛡️</h3>
+  <p><strong>Med familiekoden:</strong> Leser bare det historiske slektstreet over avdøde personer. Ingen administrasjon.</p>
+  <p><strong>Med egen godkjent innlogging:</strong> Kan bruke familierommet og legge inn historier og bilder til det delte historiske arkivet.</p>
+  <p><strong>Med administratorkontoen:</strong> Du får tilgang til dette panelet og kan endre familiepassord, medlemsstatus og historiske slektsdata.</p>
+  <p><strong>Levende personer:</strong> Private profiler og ditt familieutkast er fortsatt knyttet til din personlige konto. Det er ikke laget et felles publiseringssamtykke for levende slektninger ennå.</p>
+  <div class="notice">Sider på GitHub kan fortsatt ha gamle historiske data i tidligere versjoner. Endringene her fjerner ikke historiske kopier i Git-repositoryet.</div>
+ </section>
+ <section class="card">
+  <h3>Siste administratorendringer</h3><div id="changeList"></div>
+ </section>
+</div>
+</main>
+<script type="module">
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/+esm";
+const db=createClient("https://wtswwjancxiofkjmulvl.supabase.co","sb_publishable_UbN2Fmn7U4J8HRaPZBTxNg_GVIaMm4g",{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+let sessionUser=null,people=[],members=[],connections=[],stories=[],files=[],changes=[];
+let refreshing=false;
+const notice=(id,value,error=false)=>{const n=$(id);n.textContent=value;n.classList.toggle("error",Boolean(error))};
+function el(tag,value,cls){const node=document.createElement(tag);if(value!==undefined)node.textContent=value;if(cls)node.className=cls;return node}
+function button(text,cb,cls){const b=el("button",text,cls||"secondary");b.type="button";b.addEventListener("click",cb);return b}
+function formatDate(iso){return iso?new Date(iso).toLocaleDateString("nb-NO"):""}
+function pname(id){return people.find(p=>p.id===id)?.navn||"Ukjent person"}
+async function invoke(action,extra={}){
+ const {data,error}=await db.functions.invoke("familie-admin",{body:{action,...extra}});
+ if(error){
+   let msg="Kunne ikke kontakte serveren.";
+   if(error?.context?.json){try{const x=await error.context.json();msg=x.error||msg}catch{}}
+   throw Error(msg);
+ }
+ if(!data?.ok)throw Error(data?.error||"Handlingen ble ikke godkjent.");
+ return data;
+}
+function renderMembers(){
+ const target=$("memberList");target.replaceChildren();
+ if(!members.length){target.append(el("p","Ingen personlige medlemskontoer registrert.","muted"));return}
+ for(const m of members){
+  const item=el("div",undefined,"unit");
+  const title=el("strong",m.visningsnavn||"Familiemedlem");
+  item.append(title,el("small",(m.rolle==="administrator"?"Administrator":"Medlem")+" · "+m.status+" · Registrert "+formatDate(m.opprettet)));
+  if(m.rolle==="medlem"){
+   const bar=el("div",undefined,"row");bar.style.marginTop="9px";
+   const status=document.createElement("select");status.style.maxWidth="180px";
+   for(const [value,label] of [["aktiv","Aktiv"],["sperret","Sperret"],["venter","Venter"]]){
+    const opt=document.createElement("option");opt.value=value;opt.textContent=label;if(value===m.status)opt.selected=true;status.append(opt);
+   }
+   const save=button("Lagre tilgang",async()=>{
+    if(status.value===m.status)return;
+    if(!confirm("Vil du endre medlemsstatus for "+m.visningsnavn+" til "+status.options[status.selectedIndex].text+"?"))return;
+    save.disabled=true;notice("memberStatus","Oppdaterer tilgangen …");
+    try{await invoke("member_status",{member_id:m.bruker_id,status:status.value});notice("memberStatus","Tilgangen er oppdatert.");await refresh()}
+    catch(e){notice("memberStatus",e.message,true)}finally{save.disabled=false}
+   });
+   bar.append(status,save);item.append(bar);
+  }else item.append(el("span","👑 Administrator – beskyttet","badge"));
+  target.append(item);
+ }
+}
+function populatePersonSelect(){
+ const search=$("personSearch").value.trim().toLocaleLowerCase("nb"),select=$("personSelect"),selected=select.value;
+ select.replaceChildren(new Option("➕ Ny historisk person",""));
+ for(const p of people){
+  if(!search||p.navn.toLocaleLowerCase("nb").includes(search)){
+   const opt=new Option(p.navn+" ("+(p.fodt_ar??"?")+"–"+(p.dod_ar??"?")+")",p.id);select.append(opt)
+  }
+ }
+ if([...select.options].some(o=>o.value===selected))select.value=selected;
+}
+function loadPerson(){
+ const p=people.find(p=>p.id===$("personSelect").value);
+ $("personName").value=p?.navn||"";
+ $("personBorn").value=p?.fodt_ar??"";
+ $("personDied").value=p?.dod_ar??"";
+ $("personSource").value=p?.kildehenvisning||"";
+ $("personBio").value=p?.kort_biografi||"";
+ $("personConfirmed").checked=false;
+ $("personConfirmed").disabled=Boolean(p);
+ $("personConfirmed").closest("label").style.display=p?"none":"flex";
+ notice("personStatus",p?"Redigerer historisk profil.":"Ny person: Krever dødsår og kilde.");
+}
+function populateConnectionChoices(){
+ const p=$("linkParent").value,c=$("linkChild").value;
+ for(const id of ["linkParent","linkChild"]){
+  const sel=$(id);sel.replaceChildren(new Option("Velg person …",""));
+  for(const person of people)sel.append(new Option(person.navn,person.id));
+ }
+ if(people.some(x=>x.id===p))$("linkParent").value=p;
+ if(people.some(x=>x.id===c))$("linkChild").value=c;
+ const sel=$("linkExisting"),old=sel.value;sel.replaceChildren(new Option("Velg en registrert forbindelse …",""));
+ for(const tie of connections){
+  sel.append(new Option(pname(tie.fra_person)+" → "+pname(tie.til_person)+(tie.sikkerhet==="usikker"?" (usikker)":""),tie.id))
+ }
+ if(connections.some(x=>x.id===old))sel.value=old;
+}
+function renderArchive(){
+ const make=(container,items,type)=>{
+  const target=$(container);target.replaceChildren();
+  if(!items.length){target.append(el("p","Foreløpig ingen registreringer.","muted"));return}
+  for(const item of items){
+   const div=el("div",undefined,"unit");
+   div.append(el("strong",type==="story"?item.tittel:item.filnavn||"Arkivfil"));
+   div.append(el("small",(item.signatur?item.signatur+" · ":"")+formatDate(item.opprettet)));
+   const a=el("a","Åpne "+pname(item.person_id));a.href="./familie.html#person="+encodeURIComponent(item.person_id);div.append(a);target.append(div);
+  }
+ };
+ make("storyList",stories,"story");make("fileList",files,"file");
+ const target=$("changeList");target.replaceChildren();
+ if(!changes.length){target.append(el("p","Ingen administratorendringer loggført ennå.","muted"));return}
+ for(const c of changes){const row=el("div",undefined,"unit");row.append(el("strong",c.handling.replaceAll("_"," ")),el("small",formatDate(c.opprettet)+" · "+(c.beskrivelse||"")));target.append(row)}
+}
+async function refresh(){
+ if(refreshing)return;refreshing=true;
+ notice("globalStatus","Oppdaterer administrasjonen …");
+ try{
+  const d=await invoke("dashboard");
+  members=d.members||[];people=d.persons||[];connections=d.connections||[];
+  stories=d.stories||[];files=d.files||[];changes=d.changes||[];
+  $("countPeople").textContent=people.length;
+  $("countConnections").textContent=connections.length;
+  $("countMembers").textContent=members.length;
+  $("countMemories").textContent=stories.length+files.length;
+  renderMembers();populatePersonSelect();populateConnectionChoices();renderArchive();
+  notice("globalStatus","Administratoroversikten er oppdatert.");
+ }catch(e){notice("globalStatus",e.message,true)}
+ finally{refreshing=false}
+}
+$("reload").onclick=refresh;
+$("personSearch").addEventListener("input",populatePersonSelect);
+$("personSelect").addEventListener("change",loadPerson);
+$("newPerson").onclick=()=>{$("personSearch").value="";$("personSelect").value="";populatePersonSelect();loadPerson();$("personName").focus()};
+$("passForm").addEventListener("submit",async e=>{
+ e.preventDefault();const btn=e.target.querySelector("button");btn.disabled=true;notice("passStatus","Lagrer familiekoden …");
+ try{
+  const {data,error}=await db.functions.invoke("familie-kodeles",{body:{action:"set",code:$("pass").value}});
+  if(error||!data?.ok){
+   let message=data?.error||"Kunne ikke lagre familiekoden.";
+   if(error?.context?.json){try{const j=await error.context.json();message=j.error||message}catch{}}
+   throw Error(message);
+  }
+  $("pass").value="";notice("passStatus","Familiepassordet er lagret. Den gamle koden er nå ugyldig.");
+ }catch(err){notice("passStatus",err.message,true)}
+ finally{btn.disabled=false}
+});
+$("personForm").addEventListener("submit",async e=>{
+ e.preventDefault();const btn=e.target.querySelector('button[type="submit"]');btn.disabled=true;
+ notice("personStatus","Lagrer …");
+ const payload={person_id:$("personSelect").value||undefined,
+  navn:$("personName").value,fodt_ar:$("personBorn").value,dod_ar:$("personDied").value,
+  kildehenvisning:$("personSource").value,kort_biografi:$("personBio").value,confirm_deceased:$("personConfirmed").checked};
+ try{
+  const data=await invoke("save_person",payload);notice("personStatus",data.message||"Lagret.");
+  await refresh();
+ }catch(err){notice("personStatus",err.message,true)}
+ finally{btn.disabled=false}
+});
+$("linkForm").addEventListener("submit",async e=>{
+ e.preventDefault();const btn=e.target.querySelector('button[type="submit"]');btn.disabled=true;
+ notice("linkStatus","Lagrer familieforbindelsen …");
+ try{
+  const data=await invoke("connection_add",{parent_id:$("linkParent").value,child_id:$("linkChild").value,
+   sikkerhet:$("linkCertainty").value,kildehenvisning:$("linkSource").value});
+  notice("linkStatus",data.message||"Lagret.");await refresh();
+ }catch(err){notice("linkStatus",err.message,true)}finally{btn.disabled=false}
+});
+$("removeLink").onclick=async()=>{
+ const id=$("linkExisting").value,link=connections.find(x=>x.id===id);
+ if(!link)return notice("linkStatus","Velg en forbindelse først.",true);
+ if(!confirm("Vil du fjerne koblingen "+pname(link.fra_person)+" → "+pname(link.til_person)+"? Dette endrer slektstreet."))return;
+ const b=$("removeLink");b.disabled=true;
+ try{const d=await invoke("connection_remove",{connection_id:id,confirm:true});
+  notice("linkStatus",d.message||"Koblingen er fjernet.");await refresh();
+ }catch(e){notice("linkStatus",e.message,true)}finally{b.disabled=false}
+};
+async function init(){
+ const {data:{user},error}=await db.auth.getUser();
+ if(error||!user){
+  $("gateMessage").textContent="Logg inn i familierommet med din personlige e-postkonto først.";
+  return;
+ }
+ sessionUser=user;
+ const {data:member,error:memberError}=await db.from("familie_medlemmer")
+ .select("rolle,status").eq("bruker_id",user.id).maybeSingle();
+ if(memberError||member?.rolle!=="administrator"||member?.status!=="aktiv"){
+  $("gateMessage").textContent="Denne siden er bare tilgjengelig for en godkjent familieadministrator. Familiekoden gir ikke administratortilgang.";
+  return;
+ }
+ // Serveren sjekker administratorrollen på hver forespørsel – ikke stol på bare denne visningen.
+ try{
+  const d=await invoke("dashboard");
+  members=d.members||[];people=d.persons||[];connections=d.connections||[];
+  stories=d.stories||[];files=d.files||[];changes=d.changes||[];
+  $("gate").classList.add("hidden");$("dashboard").classList.remove("hidden");
+  $("countPeople").textContent=people.length;$("countConnections").textContent=connections.length;
+  $("countMembers").textContent=members.length;$("countMemories").textContent=stories.length+files.length;
+  renderMembers();populatePersonSelect();loadPerson();populateConnectionChoices();renderArchive();
+ }catch(e){$("gateMessage").textContent="Kunne ikke åpne administratorpanelet: "+e.message}
+}
+db.auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT")location.replace("./familie.html")});
+init().catch(e=>$("gateMessage").textContent="Feil ved innlogging: "+e.message);
+</script>
+</body>
+</html>
