@@ -70,6 +70,24 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
 </section>
 <section id="private" class="hidden">
   <div class="top"><div><h2 style="margin-bottom:4px">Velkommen til familierommet 🌿</h2><p class="muted" id="welcome"></p></div><button class="secondary" id="signOut">Logg ut</button></div>
+  
+  <section class="card" style="margin-bottom:18px" id="livingSelfPanel">
+    <div class="eyebrow">Bare for deg</div>
+    <h3>Min profil 🌱</h3>
+    <p class="muted" id="livingSelfPreview" aria-live="polite">Henter den private profilen din ...</p>
+    <p class="muted">Denne profilen er foreløpig bare synlig for deg. Den er ikke med i den delte personlisten eller slektstreet. Vi kan knytte deg til familien når opplysningene om levende slektninger er avklart.</p>
+    <details>
+      <summary style="cursor:pointer;font-weight:700;padding:10px 0">Se eller rett opplysningene mine</summary>
+      <form id="livingSelfForm">
+        <label for="livingSelfName">Mitt navn</label>
+        <input id="livingSelfName" autocomplete="name" maxlength="250" required>
+        <label for="livingSelfBirth">Fødselsdato (valgfritt)</label>
+        <input id="livingSelfBirth" type="date" autocomplete="bday">
+        <button type="submit" style="margin-top:13px">Lagre min private profil</button>
+      </form>
+    </details>
+    <p id="livingSelfStatus" class="status" aria-live="polite"></p>
+  </section>
   <div class="layout">
     <section class="card">
       <h3>Finn en slektning</h3><p class="muted">Trykk på en person for å se familieforhold, historier og bilder.</p>
@@ -125,6 +143,46 @@ const personById=()=>new Map(persons.map(p=>[p.id,p]));
 function text(tag,content,cls){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=content;return el}
 function nameFor(id){return persons.find(p=>p.id===id)?.navn||"Ukjent"}
 function authErrorMessage(error){const code=error?.code||"";const msg=error?.message||String(error);if(code==="email_address_not_authorized"||msg.includes("email_address_not_authorized"))return "E-posttjenesten er foreløpig begrenset til testadresser. Familieadministrator må sette opp e-postutsendelse (SMTP) i Supabase før resten av familien kan logge inn.";if(code==="over_email_send_rate_limit"||msg.toLowerCase().includes("rate limit"))return "For mange e-poster er sendt på kort tid. Prøv igjen senere.";return msg}
+
+async function loadOwnLivingProfile(){
+  if(!user)return;
+  const {data,error}=await db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",user.id).maybeSingle();
+  if(error){
+    $("livingSelfPreview").textContent="Kunne ikke hente din private profil.";
+    notice("livingSelfStatus",authErrorMessage(error),true);
+    return;
+  }
+  if(!data){
+    $("livingSelfPreview").textContent="Du har ingen privat profil ennå. Du kan opprette en nedenfor.";
+    $("livingSelfName").value="";
+    $("livingSelfBirth").value="";
+    return;
+  }
+  $("livingSelfName").value=data.navn;
+  $("livingSelfBirth").value=data.fodt_dato||"";
+  const prettyDate=data.fodt_dato?new Date(data.fodt_dato+"T12:00:00").toLocaleDateString("nb-NO",{day:"numeric",month:"long",year:"numeric"}):"ikke oppgitt";
+  $("livingSelfPreview").textContent=data.navn+" · Født: "+prettyDate;
+  notice("livingSelfStatus","");
+}
+$("livingSelfForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!user||profile?.status!=="aktiv")return;
+  const btn=event.target.querySelector("button");
+  const navn=$("livingSelfName").value.trim();
+  if(!navn)return;
+  btn.disabled=true;
+  notice("livingSelfStatus","Lagrer ...");
+  const {error}=await db.from("levende_profiler").upsert({
+    bruker_id:user.id,
+    navn,
+    fodt_dato:$("livingSelfBirth").value||null,
+    oppdatert:new Date().toISOString()
+  },{onConflict:"bruker_id"});
+  if(error){notice("livingSelfStatus","Kunne ikke lagre: "+authErrorMessage(error),true);}
+  else{await loadOwnLivingProfile();notice("livingSelfStatus","Lagret. Bare din konto kan se denne profilen.");}
+  btn.disabled=false;
+});
+
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
@@ -136,6 +194,7 @@ async function updateState(){
  if(p?.status==="sperret"){show("join");hide("private");hide("joinForm");$("joiningAs").textContent="Tilgangen er sperret. Kontakt familieadministrator.";return}
  if(p?.status!=="aktiv"){show("join");show("joinForm");hide("private");$("joiningAs").textContent="E-post bekreftet: "+(user.email||"");return}
  hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
+ await loadOwnLivingProfile();
  await loadPrivate();
 }
 $("emailForm").addEventListener("submit",async e=>{
