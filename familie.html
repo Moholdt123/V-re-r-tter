@@ -78,6 +78,20 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
 .private-bridge-button small{display:block;color:var(--muted);font-weight:400}
 @media(max-width:520px){.private-bridge-grid{grid-template-columns:1fr}}
 
+
+/* Lagrede forskningsspor: kun lastet etter kontrollert familieinnlogging. */
+.research-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.research-entry{background:#fbfaf5;border:1px solid #eadfbb;border-radius:13px;padding:15px;min-width:0}
+.research-entry h4{font-size:18px;font-family:Georgia,serif;font-weight:normal;margin:8px 0 5px;color:var(--dark)}
+.research-entry p{font-size:13px;overflow-wrap:anywhere}
+.research-tag{display:inline-block;font-size:11px;background:#f4edce;color:#715a27;border-radius:40px;padding:4px 9px;font-weight:750}
+.research-entry details{margin-top:10px}
+.research-entry summary{cursor:pointer;font-size:13px;font-weight:750;color:var(--dark);padding:6px 0}
+.research-entry a{color:#246746;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.research-sources{padding-left:20px;font-size:12px;display:grid;gap:6px}
+.research-note{border:1px solid #e2d09e;background:#f9f5e7;border-radius:10px;padding:12px;margin:12px 0}
+@media(max-width:680px){.research-list{grid-template-columns:1fr}.research-entry{padding:13px}}
+
 </style>
 </head>
 <body>
@@ -127,6 +141,15 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
     </form>
     <p id="familyCodeAdminStatus" class="status" aria-live="polite"></p>
     <p class="muted">Når koden er lagret, kan du sende denne adressen privat til familien: <a href="./familiekode.html">Åpne familievisningen 🌳</a>. Du kan bytte kode senere. Da slutter gamle kodeøkter å fungere.</p>
+  </section>
+
+
+  <section class="card" id="researchPanel" style="margin-bottom:18px">
+    <div class="eyebrow">Forskningsspor · ikke verifisert</div>
+    <h3>🔎 Mulige aner fra 1500-tallet</h3>
+    <p class="muted">Her samler vi gamle slektsspor vi ønsker å undersøke. Årstallene er foreløpige, og vi har <strong>ikke</strong> bekreftet at disse personene er dine direkte forfedre. Kildene er lagret slik at vi ikke glemmer dem.</p>
+    <div id="researchList" class="research-list"><p class="muted">Henter forskningsspor ...</p></div>
+    <p id="researchStatus" class="status" aria-live="polite"></p>
   </section>
 
   <section class="card" style="margin-bottom:18px" id="livingSelfPanel">
@@ -403,6 +426,71 @@ $("setFamilyCodeForm").addEventListener("submit",async e=>{
   btn.disabled=false;
 });
 
+
+let researchLeads=[];
+async function loadResearchLeads(){
+ if(!user||profile?.status!=="aktiv")return;
+ const {data,error}=await db.from("forskningsspor")
+  .select("slug,tittel,anslatt_fodselsar,anslatt_dodsar,dateringsmerknad,beskrivelse,tilknyttet_person_id,kildeoppforinger,status")
+  .order("anslatt_fodselsar",{ascending:true});
+ if(error){
+  $("researchList").replaceChildren(text("p","Kunne ikke hente forskningssporene: "+authErrorMessage(error),"muted"));
+  notice("researchStatus","Spør administrator dersom feilen fortsetter.",true);
+  return;
+ }
+ researchLeads=data||[];
+ renderResearchLeads();
+}
+function renderResearchLeads(){
+ const list=$("researchList");
+ list.replaceChildren();
+ if(!researchLeads.length){
+  list.append(text("p","Ingen forskningsspor er registrert ennå.","muted"));
+  return;
+ }
+ for(const r of researchLeads){
+  const card=text("article","","research-entry");
+  const label=r.status==="verifisert"?"Kildekontrollert":r.status==="avkreftet"?"Avkreftet":"Til kontroll – ikke bekreftet";
+  card.append(text("span",label,"research-tag"));
+  card.append(text("h4",r.tittel));
+  card.append(text("p","Foreløpig datering: ca. "+(r.anslatt_fodselsar||"?")+" – ca. "+(r.anslatt_dodsar||"?")));
+  if(r.dateringsmerknad)card.append(text("p",r.dateringsmerknad,"muted"));
+  card.append(text("p",r.beskrivelse));
+  if(r.tilknyttet_person_id){
+   const b=text("button","Åpne tilknyttet historisk person");
+   b.type="button";b.className="secondary";
+   b.style.marginTop="5px";b.style.fontSize="12px";
+   b.onclick=async()=>{
+    const selected=persons.find(p=>p.id===r.tilknyttet_person_id);
+    if(selected){
+     await choosePerson(selected.id);
+     $("personContent").scrollIntoView({behavior:"smooth",block:"start"});
+    }else notice("researchStatus","Personen finnes ikke i det innloggede personregisteret.",true);
+   };
+   card.append(b);
+  }
+  const sources=Array.isArray(r.kildeoppforinger)?r.kildeoppforinger:[];
+  if(sources.length){
+   const details=document.createElement("details");
+   const summary=text("summary","Se kildene ("+sources.length+")");
+   details.append(summary);
+   const ul=text("ul","","research-sources");
+   for(const source of sources){
+    if(typeof source?.url!=="string"||!source.url.startsWith("https://"))continue;
+    const li=document.createElement("li");
+    const a=text("a",source.etikett||"Åpne kilde");
+    a.href=source.url;a.target="_blank";a.rel="noopener noreferrer";
+    li.append(a);
+    if(source.merknad)li.append(text("p",source.merknad,"muted"));
+    ul.append(li);
+   }
+   details.append(ul);card.append(details);
+  }
+  list.append(card);
+ }
+ notice("researchStatus","Disse notatene er lagret i familiearkivet og kan undersøkes videre.");
+}
+
 async function updateState(){
  const {data:{session}}=await db.auth.getSession();
  user=session?.user||null;profile=null;
@@ -419,8 +507,10 @@ async function updateState(){
  await loadOwnLivingProfile();
  await loadOwnFamilyBranch();
  await loadOwnHistoricalBridges();
+ await loadResearchLeads();
  await loadPrivate();
  if(location.hash==="#family")$("privateBranchPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ if(location.hash==="#forskningsspor")$("researchPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("emailForm").addEventListener("submit",async e=>{
  e.preventDefault();
@@ -487,6 +577,15 @@ async function choosePerson(id){
  $("personContent").append(text("span",[(p.fodt_ar||"?"),(p.dod_ar||"?")].join("–"),"pill"));
  if(p.kort_biografi)$("personContent").append(text("p",p.kort_biografi));
  if(p.kildehenvisning)$("personContent").append(text("p","Kilder: "+p.kildehenvisning,"muted"));
+ for(const lead of researchLeads.filter(x=>x.tilknyttet_person_id===id)){
+  const note=text("div","","research-note");
+  note.append(text("strong","🔎 Forskningsspor – ikke bekreftet"));
+  note.append(text("p",lead.tittel+": "+lead.dateringsmerknad));
+  const a=text("a","Se kilder og hele forskningsnotatet");
+  a.href="#forskningsspor";
+  a.onclick=e=>{e.preventDefault();$("researchPanel").scrollIntoView({behavior:"smooth",block:"start"});};
+  note.append(a);$("personContent").append(note);
+ }
  const rel=related(id);
  relatedLinks($("personContent"),"Foreldre",rel.par);relatedLinks($("personContent"),"Søsken",rel.sib);relatedLinks($("personContent"),"Barn",rel.children);
  renderSmallTree(id);
