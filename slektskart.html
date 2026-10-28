@@ -277,7 +277,7 @@ function fit(){
  port.scrollLeft=Math.max(0,(chart.width*chart.scale-port.clientWidth)/2);
  port.scrollTop=0;
 }
-function choose(id){
+function choose(id,scrollToDetails=true){
  if(!people.has(id))return;
  selected=id;
  const n=people.get(id);
@@ -290,7 +290,7 @@ function choose(id){
   else location.href="./familie.html#person="+encodeURIComponent(n.dbid);
  };
  $("focusPerson").onclick=()=>{focused=id;render();};
- if(portTreeNode(id))$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
+ if(scrollToDetails)$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function portTreeNode(id){return people.has(id)}
 $("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
@@ -370,7 +370,7 @@ async function start(){
  focused=mine||[...people.keys()][0];
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
  if(mine)$("search").placeholder="Søk etter navn (f.eks. ditt eget) …";
- syncMode();render();if(mine)choose(mine);
+ syncMode();render();if(mine)choose(mine,false);
 }
 db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT")location.replace("./familie.html")});
 start().catch(e=>$("loadingMsg").textContent="Kunne ikke starte slektskartet: "+e.message);
