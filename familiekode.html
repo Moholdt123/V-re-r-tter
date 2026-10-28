@@ -133,10 +133,18 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
 #matches .private-search-tip{padding:11px 13px;border:1px solid #c7ddc8;border-radius:10px;background:#f1f9f0;color:var(--forest);width:100%;font-size:13px}
 #matches .private-search-tip a{font-weight:750;color:var(--forest);text-underline-offset:3px}
 
+
+header a.brand{margin-left:0;padding:0;border:0;display:flex;align-items:center;gap:12px;min-width:0;color:#fff;text-decoration:none}
+header a.brand:hover{opacity:.94}
+header .brand-icon{font-size:29px;flex-shrink:0}
+header .brand-text{display:block;min-width:0}
+header .brand-text h1{margin:0}
+header .brand-text p,header .brand-text small{display:block}
+
 </style>
 </head>
 <body>
-<header><span style="font-size:29px" aria-hidden="true">🌳</span><div><h1>Våre røtter</h1><p>Familiekode · Privat historisk slektskart</p></div><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
+<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Familiekode · Historisk slektstre</p></span></a><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
 <main>
 <section class="card" id="loading" style="max-width:560px;margin:25px auto;padding:25px">
   <div style="font-size:45px;text-align:center">🌳</div>
