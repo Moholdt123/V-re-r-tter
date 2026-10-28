@@ -89,6 +89,10 @@ details summary{cursor:pointer;font-weight:700;padding:8px 0;color:var(--forest)
    <div class="two">
     <div><label for="personName">Fullt navn</label><input id="personName" maxlength="250" required></div>
     <div><label for="personBorn">Fødselsår (hvis kjent)</label><input id="personBorn" type="number" min="1000" max="2026"></div>
+    <div><label for="personGender">Kjønn – hvis kjent</label>
+     <select id="personGender"><option value="">Ukjent / ikke registrert</option><option value="mann">Mann</option><option value="kvinne">Kvinne</option></select>
+     <small class="muted">Brukes til å vise «oldefar» eller «oldemor» i kartet.</small>
+    </div>
     <div><label for="personDied">Dødsår</label><input id="personDied" type="number" min="1000" max="2026"></div>
     <div><label for="personSource">Kildehenvisning</label><input id="personSource" maxlength="1200" placeholder="F.eks. kirkebok, gravminne eller familienotat"></div>
    </div>
@@ -198,6 +202,7 @@ function loadPerson(){
  const p=people.find(p=>p.id===$("personSelect").value);
  $("personName").value=p?.navn||"";
  $("personBorn").value=p?.fodt_ar??"";
+ $("personGender").value=p?.kjonn||"";
  $("personDied").value=p?.dod_ar??"";
  $("personSource").value=p?.kildehenvisning||"";
  $("personBio").value=p?.kort_biografi||"";
@@ -274,6 +279,7 @@ $("personForm").addEventListener("submit",async e=>{
  notice("personStatus","Lagrer …");
  const payload={person_id:$("personSelect").value||undefined,
   navn:$("personName").value,fodt_ar:$("personBorn").value,dod_ar:$("personDied").value,
+  kjonn:$("personGender").value,
   kildehenvisning:$("personSource").value,kort_biografi:$("personBio").value,confirm_deceased:$("personConfirmed").checked};
  try{
   const data=await invoke("save_person",payload);
