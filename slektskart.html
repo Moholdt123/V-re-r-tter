@@ -118,7 +118,7 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
 <div class="card">
  <h2>Utforsk slekta di 🌿</h2>
  <p class="muted">Se mors og fars aner i hver sin tydelige gren. Trykk på en slektning for å utforske personens barn, etterkommere eller eldre forfedre. «Hele slekta mi» viser dine registrerte forfedre – andre sidegrener åpnes fra enkeltpersoner.</p>
- <p id="researchShortcut" style="margin:3px 0 14px;font-size:13px"><a href="./familie.html#forskningsspor" style="color:var(--forest);font-weight:700;text-underline-offset:3px">🔎 Forskningsspor fra 1500-tallet</a> <span class="muted">– mulige slektsfunn som ikke er bekreftet</span></p>
+ <p id="researchShortcut" style="margin:3px 0 14px;font-size:13px"><a href="./familie.html#forskningsspor" style="color:var(--forest);font-weight:700;text-underline-offset:3px">🔎 Forskningsspor og familieopplysninger</a> <span class="muted">– mulige slektsfunn som ikke er bekreftet</span></p>
  <div class="searchline">
    <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
    <button id="showMine" type="button">🌱 Finn meg</button>
@@ -247,7 +247,7 @@ function connect(from,to,confidence,label){
  if(links.some(l=>l.from===from&&l.to===to))return;
  links.push({from,to,confidence:confidence||"familieopplysning",label:label||"forelder_barn"});
 }
-function rebuildGraph(history,ties,self,relatives,bridges){
+function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[]){
   people=new Map();links=[];mine=null;
   for(const p of history)addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,gender:p.kjonn||null,kind:"historical",dbid:p.id});
   for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
@@ -277,6 +277,15 @@ function rebuildGraph(history,ties,self,relatives,bridges){
   for(const b of bridges){
     const personId="h:"+b.historisk_person_id;
     if(b.kobling==="forelder")connect(personId,roleId(b.relasjon),"familieopplysning");
+  }
+  for(const p of sideBranches)if(p.node_key&&p.navn)
+    addNode({id:"x:"+p.node_key,name:p.navn,born:p.fodt_ar||null,died:p.dod_ar||null,
+      kind:"private",label:p.livsstatus==="avdod"?"Avdød · privat":"Privat"});
+  for(const p of sideBranches){
+    const id="x:"+p.node_key;
+    if(!people.has(id))continue;
+    for(const parent of [p.forelder1_key,p.forelder2_key])
+      if(parent&&people.has(parent))connect(parent,id,"familieopplysning");
   }
 }
 function getNeighbors(id,direction){
@@ -1065,7 +1074,7 @@ async function start(){
  }
  account=auth.user;
  const {data:member,error:memberError}=await db.from("familie_medlemmer")
- .select("status").eq("bruker_id",account.id).maybeSingle();
+ .select("status,rolle").eq("bruker_id",account.id).maybeSingle();
  if(memberError||member?.status!=="aktiv"){
   $("loadingMsg").textContent="Du må være et aktivt familiemedlem for å bruke slektskartet.";
   return;
@@ -1079,7 +1088,15 @@ async function start(){
  ]);
  const err=h.error||t.error||s.error||r.error||b.error;
  if(err){$("loadingMsg").textContent="Kunne ikke laste slektsdata. "+err.message;return}
- rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[]);
+ let sideBranches=[];
+ if(member.rolle==="administrator"){
+  const {data:privateData,error:privateError}=await db.from("private_slekt_sidegrener")
+    .select("node_key,navn,fodt_ar,dod_ar,livsstatus,forelder1_key,forelder2_key")
+    .eq("bruker_id",account.id);
+  if(privateError){$("loadingMsg").textContent="Kunne ikke hente privat slektsgren: "+privateError.message;return;}
+  sideBranches=privateData||[];
+ }
+ rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[],sideBranches);
  if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}
  focused=mine||[...people.keys()][0];
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
