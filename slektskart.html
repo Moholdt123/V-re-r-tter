@@ -117,14 +117,14 @@ body.tree-fullscreen{overflow:hidden;overscroll-behavior:none}
 <section id="app" class="hidden">
 <div class="card">
  <h2>Utforsk slekta di 🌿</h2>
- <p class="muted">Søk etter deg selv eller en annen registrert slektning. Trykk på et navn i kartet for å se personen. De grønne personene er fra din private familiegren. Velg «Vis alt» for å utforske på hele mobilskjermen.</p>
+ <p class="muted">Se mors og fars aner i hver sin tydelige gren. Trykk på en slektning for å utforske personens barn, etterkommere eller eldre forfedre. «Hele slekta mi» viser dine registrerte forfedre – andre sidegrener åpnes fra enkeltpersoner.</p>
  <div class="searchline">
    <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
    <button id="showMine" type="button">🌱 Finn meg</button>
  </div>
  <div id="matches" aria-live="polite"></div>
  <div id="modeBar" role="group" aria-label="Visning av slektskart">
-   <button data-mode="family" aria-pressed="true">Hele slekta mi</button>
+   <button data-mode="family" aria-pressed="true">Mine to slektsgrener</button>
    <button data-mode="ancestors" aria-pressed="false">Forfedre</button>
    <button data-mode="descendants" aria-pressed="false">Etterkommere</button>
    <button data-mode="archive" aria-pressed="false">Alle registrerte</button>
@@ -298,7 +298,12 @@ function reachable(start,direction){
 function familyMembers(){
  if(!focused||!people.has(focused))return new Set();
  if(mode==="archive")return new Set(people.keys());
- return reachable(focused,mode==="family"?"both":mode);
+ if(mode==="family"){
+  const up=reachable(focused,"ancestors");
+  for(const id of reachable(focused,"descendants"))up.add(id);
+  return up;
+ }
+ return reachable(focused,mode);
 }
 function layersFor(ids){
  const root=ids.has(focused)?focused:[...ids][0];
@@ -390,7 +395,7 @@ function filterLayoutNodes(){
  const levels=layersFor(raw),sides=classifyBranches(raw),result=new Set();
  const limit=generationLimit==="all"?Infinity:Number(generationLimit);
  for(const [gen,list] of levels){
-  if(gen < -limit)continue;
+  if(gen < -limit||gen>0&&focused===mine)continue;
   for(const id of list){
    const side=sides.get(id);
    if(branchSide!=="both"&&side!==branchSide&&side!=="self"&&side!=="shared")continue;
@@ -465,10 +470,114 @@ function descendantTreeLayout(ids,nodeW,nodeH,gapX,gapY,pad){
  return {ids,split:false,sideMap:new Map(),loc,width,height,nodeW,nodeH,keys,descendantTree:true};
 }
 
+
+/* Direkte anetavle: plasser hvert foreldreslekt-ledd i en egen horisontal gren.
+   Aldri gå gjennom barn for å finne flere "forfedre" — dette er årsaken til spindelvevet. */
+function ancestryLayout(root,allowed,config){
+ const {nodeW,nodeH,gapX,gapY,pad}=config;
+ const parents=new Map(),distances=new Map([[root,0]]),queue=[root];
+ for(let index=0;index<queue.length;index++){
+  const id=queue[index],level=distances.get(id);
+  const family=links.filter(e=>e.to===id&&allowed.has(e.from))
+   .map(e=>e.from).filter((x,i,list)=>list.indexOf(x)===i);
+  family.sort((a,b)=>{
+   if(id===mine){return a==="p:mor"?-1:b==="p:mor"?1:a==="p:far"?-1:1}
+   const na=people.get(a),nb=people.get(b);
+   const genderRank=x=>x?.gender==="kvinne"?0:x?.gender==="mann"?1:2;
+   return genderRank(na)-genderRank(nb)||titleFor(na).localeCompare(titleFor(nb),"nb");
+  });
+  parents.set(id,family);
+  for(const p of family)if(!distances.has(p)){
+    distances.set(p,level+1);
+    queue.push(p);
+  }
+ }
+ const widths=new Map(),visiting=new Set();
+ function weight(id){
+  if(widths.has(id))return widths.get(id);
+  if(visiting.has(id))return 1;
+  visiting.add(id);
+  const family=parents.get(id)||[];
+  const result=Math.max(1,family.reduce((sum,p)=>sum+weight(p),0));
+  visiting.delete(id);widths.set(id,result);return result;
+ }
+ const rootWeight=weight(root);
+ const loc=new Map(),sideMap=new Map();
+ const sideFor=id=>{
+  if(id==="p:mor"||id==="p:mormor"||id==="p:morfar")return "maternal";
+  if(id==="p:far"||id==="p:farmor"||id==="p:farfar")return "paternal";
+  return null;
+ };
+ const maxDepth=Math.max(0,...distances.values());
+ const stride=nodeW+gapX;
+ const offset=pad+gapX*0.5;
+ function place(id,left,side){
+  if(loc.has(id))return;  // En reell felles stamfar merkes særskilt, aldri dupliseres som ekstra person.
+  const width=widths.get(id)||1,depth=distances.get(id)||0;
+  const x=offset+(left+(width-1)/2)*stride;
+  const y=pad+65+(maxDepth-depth)*(nodeH+gapY);
+  loc.set(id,{x,y});
+  sideMap.set(id,sideFor(id)||side||(id===root?"self":"other"));
+  let next=left;
+  for(const p of parents.get(id)||[]){
+    const childSide=sideFor(p)||side||(id===root?(p==="p:mor"?"maternal":p==="p:far"?"paternal":"other"):"other");
+    place(p,next,childSide);
+    next+=widths.get(p)||1;
+  }
+ }
+ place(root,0,"self");
+ const keys=Array.from({length:maxDepth+1},(_,i)=>i);
+ return {
+  ids:new Set(loc.keys()),split:true,sideMap,loc,
+  width:Math.max(650,2*pad+rootWeight*stride+gapX),
+  height:pad*2+130+(maxDepth+1)*(nodeH+gapY),
+  nodeW,nodeH,keys,ancestryTree:true,root
+ };
+}
+function centeredFamilyLayout(root,state,config){
+ const ancestors=reachable(root,"ancestors"),children=reachable(root,"descendants");
+ const older=ancestryLayout(root,ancestors,config);
+ const younger=descendantTreeLayout(children,config.nodeW,config.nodeH,config.gapX,config.gapY,config.pad);
+ const rootOld=older.loc.get(root),rootYoung=younger.loc.get(root);
+ if(!rootOld||!rootYoung)return older;
+ const loc=new Map(older.loc);
+ const yOffset=rootOld.y-rootYoung.y;
+ for(const [id,at] of younger.loc){
+  if(id===root)continue;
+  loc.set(id,{x:at.x-rootYoung.x+rootOld.x,y:at.y+yOffset});
+ }
+ const minX=Math.min(...[...loc.values()].map(p=>p.x));
+ const dx=minX<config.pad?config.pad-minX:0;
+ for(const p of loc.values())p.x+=dx;
+ const width=Math.max(650,...[...loc.values()].map(p=>p.x+config.nodeW+config.pad));
+ const height=Math.max(...[...loc.values()].map(p=>p.y+config.nodeH+config.pad));
+ return {...older,ids:new Set(loc.keys()),loc,width,height,split:false,sideMap:new Map(),keys:[...new Set([...loc.values()].map(p=>Math.round(p.y/(config.nodeH+config.gapY))))].sort((a,b)=>a-b),ancestryTree:false,combinedTree:true,root};
+}
+
 function computeMapLayout(){
  const state=filterLayoutNodes(),{ids,split,sideMap,levels}=state;
- const {nodeW,nodeH,gapX,gapY,pad}=spacingConfig();
- if(mode==="descendants"&&focused&&ids.has(focused))return descendantTreeLayout(ids,nodeW,nodeH,gapX,gapY,pad);
+ const config=spacingConfig();
+ const {nodeW,nodeH,gapX,gapY,pad}=config;
+ // Retningsbestemte slektsledd hindrer "innavl-illusjonen" i helhetskartet.
+ if(focused&&ids.has(focused)){
+  if(mode==="descendants")return descendantTreeLayout(ids,nodeW,nodeH,gapX,gapY,pad);
+  if(mode==="ancestors"||mode==="family"&&focused===mine){
+   const allAncestors=reachable(focused,"ancestors");
+   const permitted=new Set([...ids].filter(id=>allAncestors.has(id)));
+   const layout=ancestryLayout(focused,permitted,config);
+   if(focused===mine){
+    const requested=branchSide;
+    if(requested!=="both"){
+     // Angi gren ved første foreldreslekt-ledd – ikke ved hvem en fjern slektning er koblet til.
+     const kept=new Set([mine]);
+     for(const [id,side] of layout.sideMap)if(side===requested)kept.add(id);
+     return ancestryLayout(focused,kept,config);
+    }
+   }
+   return layout;
+  }
+  if(mode==="family")return centeredFamilyLayout(focused,state,config);
+ }
  const keys=[...levels.keys()].filter(k=>levels.get(k).some(id=>ids.has(id))).sort((a,b)=>a-b);
  if(!keys.length)return {...state,keys,loc:new Map(),width:650,height:400,nodeW,nodeH};
  const loc=new Map();
@@ -550,8 +659,10 @@ function render(){
   if(!a||!b)continue;
   const sameRow=Math.abs((a.y+nodeH)-b.y)<20;
   const x1=a.x+nodeW/2,y1=a.y+nodeH,x2=b.x+nodeW/2,y2=b.y;
-  const half=Math.max(24,(y2-y1)/2);
-  const d="M"+x1+" "+y1+" C"+x1+" "+(y1+half)+" "+x2+" "+(y2-half)+" "+x2+" "+y2;
+  const middle=y1+(y2-y1)*0.5;
+  const d=layout.ancestryTree||layout.combinedTree?
+    "M"+x1+" "+y1+" V"+middle+" H"+x2+" V"+y2:
+    "M"+x1+" "+y1+" C"+x1+" "+middle+" "+x2+" "+middle+" "+x2+" "+y2;
   const branch=sideMap.get(e.from)||sideMap.get(e.to);
   const color=e.confidence==="usikker"?"#856847":branch==="maternal"?"#35748d":branch==="paternal"?"#8c6834":"#35774c";
   edges.append(svgEl("path",{d,stroke:color,"stroke-width":2.8,"stroke-dasharray":e.confidence==="usikker"?"10 7":"none",opacity:0.85,"data-from":e.from,"data-to":e.to}));
@@ -584,9 +695,9 @@ function render(){
  updateBranchControls();
  $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
  $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
- $("status").textContent=split?
-  "Mors familie vises til venstre (blått), fars familie til høyre (gyllent). Linjene viser slektskoblinger: trykk på et navn for å fremheve de nærmeste. Dra kartet for å utforske.":
-  mode==="archive"?"Viser alle registrerte personer, også slektsgrener som ennå ikke er koblet sammen.":
+ $("status").textContent=layout.ancestryTree?
+  "Dette er foreldrelinjene bakover i tid. Mors og fars grener er ordnet hver for seg. Noen registrerte koblinger er usikre – stiplede linjer er ikke bekreftet. Trykk på en person for å utforske barn og sidegrener.":
+  mode==="archive"?"Hele arkivet inneholder også personer uten bekreftet kobling til deg. Velg Mine to slektsgrener for en ryddigere visning.":
   "Viser registrerte slektsforbindelser. Bruk «🌱 Finn meg» for å se mors og fars side separat.";
 }
 
@@ -788,16 +899,14 @@ function setImmersive(on){
 }
 $("fullClose").addEventListener("click",()=>setImmersive(false));
 $("fullHome").addEventListener("click",()=>{
- branchHistory=[];selected=mine||selected;$("branchPopup").classList.add("hidden");
- if(mine&&people.has(mine)){
-  focused=mine;mode="family";syncMode();render();
- }
- focusReadable(mine||focused);
+ $("branchPopup").classList.add("hidden");
+ showMyParents();
 });
 $("fullOverview").addEventListener("click",fit);
 $("fullBranchSide").addEventListener("change",e=>{
  branchSide=e.target.value;$("branchSide").value=branchSide;
- render();requestAnimationFrame(()=>focusReadable(mine||focused));
+ if(mine&&focused!==mine)showMyParents();
+ else {render();requestAnimationFrame(()=>focusReadable(mine||focused));}
 });
 $("fullGenerationLimit").addEventListener("change",e=>{
  generationLimit=e.target.value;$("generationLimit").value=generationLimit;
@@ -855,7 +964,18 @@ function choose(id,scrollToDetails=true){
  if(scrollToDetails&&!immersive)$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function portTreeNode(id){return people.has(id)}
-$("branchSide").addEventListener("change",e=>{branchSide=e.target.value;render()});
+function showMyParents(){
+ if(!mine)return;
+ branchHistory=[];
+ focused=mine;mode="family";selected=mine;
+ $("fullGenerationLimit").value=generationLimit;
+ syncMode();render();requestAnimationFrame(()=>focusReadable(mine));
+}
+$("branchSide").addEventListener("change",e=>{
+ branchSide=e.target.value;
+ if(focused!==mine&&mine)showMyParents();
+ else render();
+});
 $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
 $("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
