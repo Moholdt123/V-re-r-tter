@@ -146,8 +146,8 @@ footer{padding:18px;text-align:center;color:var(--muted);border-top:1px solid va
 
   <section class="card" id="researchPanel" style="margin-bottom:18px">
     <div class="eyebrow">Forskningsspor · ikke verifisert</div>
-    <h3>🔎 Mulige aner fra 1500-tallet</h3>
-    <p class="muted">Her samler vi gamle slektsspor vi ønsker å undersøke. Årstallene er foreløpige, og vi har <strong>ikke</strong> bekreftet at disse personene er dine direkte forfedre. Kildene er lagret slik at vi ikke glemmer dem.</p>
+    <h3>🔎 Forskningsspor og gamle familieopplysninger</h3>
+    <p class="muted">Her samler vi både mulige aner fra 1500-tallet, minner fra familien og andre historiske spor som må undersøkes. Muntlige opplysninger og motstridende kilder merkes tydelig, og vi endrer ikke slektsforbindelsene uten dokumentasjon.</p>
     <div id="researchList" class="research-list"><p class="muted">Henter forskningsspor ...</p></div>
     <p id="researchStatus" class="status" aria-live="polite"></p>
   </section>
@@ -476,11 +476,16 @@ function renderResearchLeads(){
    details.append(summary);
    const ul=text("ul","","research-sources");
    for(const source of sources){
-    if(typeof source?.url!=="string"||!source.url.startsWith("https://"))continue;
+    if(!source||typeof source!=="object")continue;
     const li=document.createElement("li");
-    const a=text("a",source.etikett||"Åpne kilde");
-    a.href=source.url;a.target="_blank";a.rel="noopener noreferrer";
-    li.append(a);
+    const isLink=typeof source.url==="string"&&source.url.startsWith("https://");
+    if(isLink){
+     const a=text("a",source.etikett||"Åpne kilde");
+     a.href=source.url;a.target="_blank";a.rel="noopener noreferrer";
+     li.append(a);
+    }else{
+     li.append(text("strong",source.etikett||"Muntlig eller privat kilde"));
+    }
     if(source.merknad)li.append(text("p",source.merknad,"muted"));
     ul.append(li);
    }
