@@ -93,8 +93,8 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
   </label>
   <label for="generationLimit">Hvor langt tilbake?
     <select id="generationLimit">
-     <option value="2">Foreldre og besteforeldre</option>
-     <option value="3" selected>3 generasjoner</option>
+     <option value="2" selected>Foreldre og besteforeldre</option>
+     <option value="3">3 generasjoner</option>
      <option value="5">5 generasjoner</option>
      <option value="all">Alle generasjoner</option>
     </select>
@@ -246,7 +246,7 @@ function nodeLabel(name){
  return result;
 }
 
-let branchSide="both",generationLimit="3";
+let branchSide="both",generationLimit="2";
 
 function rootDistances(root,blocked,ids){
  const distances=new Map();
