@@ -50,6 +50,17 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
  #mapControls{top:6px;right:6px}#mapControls button{padding:7px 9px;font-size:12px}
  .searchline{grid-template-columns:minmax(100px,1fr) auto}
 }
+
+#branchControls{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin:9px 0 14px}
+#branchControls label{font-size:13px;font-weight:700;color:var(--forest);display:grid;gap:5px}
+#branchControls select{background:#fff;border:1px solid #bdcfbe;border-radius:9px;padding:9px 12px;min-width:142px;color:var(--forest)}
+#branchControls .hint{font-size:12px;color:var(--muted);flex:1;min-width:160px}
+.branchKey{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.branchChip{display:inline-block;width:14px;height:14px;border-radius:4px}
+.branchChip.m{background:#d9edf4;border:1px solid #81b2c4}
+.branchChip.f{background:#f7eacf;border:1px solid #d1af72}
+#treePort{background-image:radial-gradient(#dce9dd 1px,transparent 1px)}
+
 </style>
 </head>
 <body>
@@ -71,9 +82,29 @@ details{margin:12px 0}summary{cursor:pointer;color:var(--forest);font-weight:700
    <button data-mode="descendants" aria-pressed="false">Etterkommere</button>
    <button data-mode="archive" aria-pressed="false">Alle registrerte</button>
  </div>
+
+ <div id="branchControls">
+  <label for="branchSide">Hvilken side?
+    <select id="branchSide">
+     <option value="both">🌿 Begge sider</option>
+     <option value="maternal">💙 Mors side</option>
+     <option value="paternal">💛 Fars side</option>
+    </select>
+  </label>
+  <label for="generationLimit">Hvor langt tilbake?
+    <select id="generationLimit">
+     <option value="2">Foreldre og besteforeldre</option>
+     <option value="3" selected>3 generasjoner</option>
+     <option value="5">5 generasjoner</option>
+     <option value="all">Alle generasjoner</option>
+    </select>
+  </label>
+  <span class="hint">Start gjerne med tre generasjoner. Velg «Alle generasjoner» når du vil se hele slekta.</span>
+ </div>
+
  <div class="row" style="justify-content:space-between;margin-bottom:10px">
   <span id="treeCount" class="muted"></span>
-  <div class="legend"><span><span class="dot private"></span>Min private familiegren</span><span><span class="dot old"></span>Historiske personer</span><span>– – Usikker kobling</span></div>
+  <div class="legend"><span class="branchKey"><span class="branchChip m"></span>Mors side</span><span class="branchKey"><span class="branchChip f"></span>Fars side</span><span>– – Usikker kobling</span></div>
  </div>
  <div id="treeWrap">
   <div id="mapControls" aria-label="Kartkontroller">
@@ -214,52 +245,182 @@ function nodeLabel(name){
  if(lines.length>3)result[2]=result[2].slice(0,19)+"…";
  return result;
 }
-function render(){
- const ids=familyMembers(),port=$("treePort");
- if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
- const layers=layersFor(ids),keys=[...layers.keys()].sort((a,b)=>a-b);
- const nodeW=205,nodeH=79,gapX=32,gapY=75,pad=70;
- const cols=Math.max(...keys.map(k=>layers.get(k).length));
- const width=Math.max(650,pad*2+cols*(nodeW+gapX)-gapX),height=pad*2+keys.length*(nodeH+gapY)-gapY;
- const loc=new Map();
- for(let row=0;row<keys.length;row++){
-  const arr=layers.get(keys[row]),span=arr.length*nodeW+(arr.length-1)*gapX;
-  const left=(width-span)/2;
-  arr.forEach((id,i)=>loc.set(id,{x:left+i*(nodeW+gapX),y:pad+row*(nodeH+gapY)}));
+
+let branchSide="both",generationLimit="3";
+
+function rootDistances(root,blocked,ids){
+ const distances=new Map();
+ if(!ids.has(root)||!people.has(root))return distances;
+ const queue=[root];distances.set(root,0);
+ for(let i=0;i<queue.length;i++){
+  const current=queue[i],distance=distances.get(current);
+  for(const next of getNeighbors(current,"both")){
+   if(next===mine||next===blocked||!ids.has(next)||distances.has(next))continue;
+   distances.set(next,distance+1);queue.push(next);
+  }
  }
- const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Interaktivt slektskart med "+ids.size+" registrerte personer"});
- const edgeGroup=svgEl("g",{fill:"none"}),nodeGroup=svgEl("g",{});
+ return distances;
+}
+function classifyBranches(ids){
+ const mum=rootDistances("p:mor","p:far",ids),dad=rootDistances("p:far","p:mor",ids);
+ const result=new Map();
+ const maternal=new Set(["p:mor","p:mormor","p:morfar"]);
+ const paternal=new Set(["p:far","p:farmor","p:farfar"]);
+ for(const id of ids){
+  if(id===mine){result.set(id,"self");continue}
+  if(maternal.has(id)){result.set(id,"maternal");continue}
+  if(paternal.has(id)){result.set(id,"paternal");continue}
+  const m=mum.get(id)??Infinity,f=dad.get(id)??Infinity;
+  result.set(id,m<f?"maternal":f<m?"paternal":Number.isFinite(m)?"shared":"other");
+ }
+ return result;
+}
+function filterLayoutNodes(){
+ const raw=familyMembers();
+ const split=Boolean(mine&&focused===mine&&(mode==="family"||mode==="ancestors"));
+ if(!split)return {ids:raw,split:false,sideMap:new Map(),levels:layersFor(raw)};
+ const levels=layersFor(raw),sides=classifyBranches(raw),result=new Set();
+ const limit=generationLimit==="all"?Infinity:Number(generationLimit);
+ for(const [gen,list] of levels){
+  if(gen < -limit)continue;
+  for(const id of list){
+   const side=sides.get(id);
+   if(branchSide!=="both"&&side!==branchSide&&side!=="self"&&side!=="shared")continue;
+   result.add(id);
+  }
+ }
+ return {ids:result,split:true,sideMap:sides,levels};
+}
+function orderWithinBranch(arr){
+ const slotOrder={mormor:0,morfar:1,farmor:0,farfar:1,mor:0,far:0};
+ return arr.sort((a,b)=>{
+  const pa=people.get(a),pb=people.get(b);
+  const ga=pa?.slot,gb=pb?.slot;
+  const oa=ga in slotOrder?slotOrder[ga]:9,ob=gb in slotOrder?slotOrder[gb]:9;
+  if(oa!==ob)return oa-ob;
+  const age=(pa?.born??9999)-(pb?.born??9999);
+  return age||titleFor(pa).localeCompare(titleFor(pb),"nb");
+ });
+}
+function computeMapLayout(){
+ const state=filterLayoutNodes(),{ids,split,sideMap,levels}=state;
+ const nodeW=194,nodeH=81,gapX=32,gapY=65,pad=70;
+ const keys=[...levels.keys()].filter(k=>levels.get(k).some(id=>ids.has(id))).sort((a,b)=>a-b);
+ if(!keys.length)return {...state,keys,loc:new Map(),width:650,height:400,nodeW,nodeH};
+ const loc=new Map();
+ let width,height;
+ if(split){
+  const bands=new Map();let maxM=1,maxF=1,maxShared=0;
+  for(const gen of keys){
+   const row=levels.get(gen).filter(id=>ids.has(id));
+   const groups={maternal:[],paternal:[],shared:[],self:[]};
+   for(const id of row){
+    const side=sideMap.get(id)||"shared";
+    if(side==="maternal"||side==="paternal"||side==="self")groups[side].push(id);
+    else groups.shared.push(id);
+   }
+   orderWithinBranch(groups.maternal);orderWithinBranch(groups.paternal);orderWithinBranch(groups.shared);
+   maxM=Math.max(maxM,groups.maternal.length);maxF=Math.max(maxF,groups.paternal.length);
+   maxShared=Math.max(maxShared,groups.shared.length);
+   bands.set(gen,groups);
+  }
+  const section=(count)=>Math.max(265,count*(nodeW+gapX)+24);
+  const leftW=branchSide==="paternal"?140:section(maxM),rightW=branchSide==="maternal"?140:section(maxF);
+  const middleW=maxShared?section(maxShared):60;
+  const leftX=pad,rightX=pad+leftW+middleW;
+  width=pad*2+leftW+middleW+rightW;
+  height=pad*2+keys.length*(nodeH+gapY)-gapY+55;
+  for(let row=0;row<keys.length;row++){
+   const gen=keys[row],groups=bands.get(gen),y=pad+row*(nodeH+gapY)+55;
+   function put(list,base,region){
+    const span=list.length*nodeW+(list.length-1)*gapX;
+    const left=base+(region-span)/2;
+    list.forEach((id,i)=>loc.set(id,{x:left+i*(nodeW+gapX),y}));
+   }
+   put(groups.maternal,leftX,leftW);
+   put(groups.paternal,rightX,rightW);
+   put(groups.shared,pad+leftW,middleW);
+   put(groups.self,0,width);
+  }
+  state.panels=[
+   {x:leftX,w:leftW,title:"MORS SIDE",fill:"#eef6f9",stroke:"#b8d7e4",color:"#31728d",count:[...ids].filter(id=>sideMap.get(id)==="maternal").length},
+   {x:rightX,w:rightW,title:"FARS SIDE",fill:"#fcf6eb",stroke:"#dfc99e",color:"#8b6a31",count:[...ids].filter(id=>sideMap.get(id)==="paternal").length}
+  ];
+ }else{
+  const cols=Math.max(...keys.map(k=>levels.get(k).filter(id=>ids.has(id)).length));
+  width=Math.max(650,pad*2+cols*(nodeW+gapX)-gapX);
+  height=pad*2+keys.length*(nodeH+gapY)-gapY;
+  for(let row=0;row<keys.length;row++){
+   const arr=levels.get(keys[row]).filter(id=>ids.has(id));
+   const span=arr.length*nodeW+(arr.length-1)*gapX,left=(width-span)/2;
+   arr.forEach((id,i)=>loc.set(id,{x:left+i*(nodeW+gapX),y:pad+row*(nodeH+gapY)}));
+  }
+ }
+ return {...state,keys,loc,width,height,nodeW,nodeH};
+}
+function highlightConnections(){
+ const svg=$("treePort").querySelector("svg");if(!svg)return;
+ for(const path of svg.querySelectorAll("path[data-from]")){
+  const direct=selected&&(path.getAttribute("data-from")===selected||path.getAttribute("data-to")===selected);
+  path.setAttribute("opacity",direct?"0.95":selected?"0.13":"0.30");
+  path.setAttribute("stroke-width",direct?"3.2":"1.5");
+ }
+}
+
+function render(){
+ const layout=computeMapLayout();
+ const {ids,split,sideMap,loc,width,height,nodeW,nodeH,keys}=layout,port=$("treePort");
+ if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
+ const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
+ if(split){
+  for(const band of layout.panels){
+   svg.append(svgEl("rect",{x:band.x-12,y:15,width:band.w+24,height:height-35,rx:20,fill:band.fill,stroke:band.stroke,"stroke-width":1.8}));
+   const heading=svgEl("text",{x:band.x+band.w/2,y:46,"text-anchor":"middle","font-family":"system-ui","font-size":18,"font-weight":800,fill:band.color});
+   heading.textContent=band.title+" · "+band.count+" personer";svg.append(heading);
+  }
+ }
+ const edges=svgEl("g",{fill:"none","stroke-linecap":"round","pointer-events":"none"});
  for(const e of links){
   if(!ids.has(e.from)||!ids.has(e.to))continue;
   const a=loc.get(e.from),b=loc.get(e.to);
   if(!a||!b)continue;
+  const sameRow=Math.abs((a.y+nodeH)-b.y)<20;
   const x1=a.x+nodeW/2,y1=a.y+nodeH,x2=b.x+nodeW/2,y2=b.y;
-  const half=(y2-y1)/2;
+  const half=Math.max(24,(y2-y1)/2);
   const d="M"+x1+" "+y1+" C"+x1+" "+(y1+half)+" "+x2+" "+(y2-half)+" "+x2+" "+y2;
-  edgeGroup.append(svgEl("path",{d,stroke:e.confidence==="usikker"?"#b68f62":"#92bca0","stroke-width":e.confidence==="usikker"?1.5:2.2,"stroke-dasharray":e.confidence==="usikker"?"6 6":"none"}));
+  const branch=sideMap.get(e.from)||sideMap.get(e.to);
+  const color=e.confidence==="usikker"?"#ad977a":branch==="maternal"?"#5b99ad":branch==="paternal"?"#b4985c":"#84a98c";
+  edges.append(svgEl("path",{d,stroke:color,"stroke-width":1.5,"stroke-dasharray":e.confidence==="usikker"?"6 6":"none",opacity:0.30,"data-from":e.from,"data-to":e.to}));
  }
- svg.append(edgeGroup);
+ svg.append(edges);
+ const nodes=svgEl("g",{});
  for(const id of ids){
   const n=people.get(id),p=loc.get(id);if(!p)continue;
-  const g=svgEl("g",{transform:"translate("+p.x+" "+p.y+")",tabindex:"0",role:"button","aria-label":"Vis "+titleFor(n)});
+  const side=sideMap.get(id);
+  const g=svgEl("g",{transform:"translate("+p.x+" "+p.y+")",tabindex:0,role:"button","data-node":id,"aria-label":"Vis "+titleFor(n)});
   g.style.cursor="pointer";
-  const fill=id===focused?"#c7e8cc":isPrivate(n)?"#e1f3e4":"#ffffff";
-  g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke:id===selected?"#275b3a":"#8fb99b","stroke-width":id===selected?3:1.6}));
+  const fill=id===focused?"#c7e8cc":side==="maternal"?"#dceef5":side==="paternal"?"#f7ead1":isPrivate(n)?"#e3f2e5":"white";
+  const stroke=id===selected?"#22533a":side==="maternal"?"#81b2c4":side==="paternal"?"#c5a46c":"#91b99b";
+  g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke,"stroke-width":id===selected?3:1.5}));
   const nameLines=nodeLabel(n.name);
   for(let j=0;j<nameLines.length;j++){
-   const t=svgEl("text",{x:nodeW/2,y:20+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":"600","font-size":nameLines.length>2?11.2:12.8,fill:"#153927"});t.textContent=nameLines[j];g.append(t);
+   const t=svgEl("text",{x:nodeW/2,y:21+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":600,"font-size":nameLines.length>2?11:12.5,fill:"#173e30"});
+   t.textContent=nameLines[j];g.append(t);
   }
   const sub=n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
-  const smaller=svgEl("text",{x:nodeW/2,y:nodeH-11,"text-anchor":"middle","font-family":"system-ui","font-size":"10.5",fill:"#5a7062"});smaller.textContent=sub;g.append(smaller);
+  const smaller=svgEl("text",{x:nodeW/2,y:nodeH-10,"text-anchor":"middle","font-family":"system-ui","font-size":10.5,fill:"#5a7062"});
+  smaller.textContent=sub;g.append(smaller);
   g.addEventListener("click",()=>choose(id));
   g.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();choose(id)}});
-  nodeGroup.append(g);
+  nodes.append(g);
  }
- svg.append(nodeGroup);
- port.replaceChildren(svg);
- chart={width,height,scale:1};fit();
+ svg.append(nodes);port.replaceChildren(svg);
+ chart={width,height,scale:1};fit();highlightConnections();
  $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
- $("status").textContent=mode==="archive"?"Alle registrerte, også slektsgrener som ennå ikke er koblet sammen.":"Viser bare registrerte forbindelser. Manglende slektninger kommer fram når de blir lagt til.";
+ $("status").textContent=split?
+  "Mors familie vises til venstre (blått), fars familie til høyre (gyllent). Trykk på et navn for å fremheve forbindelsene. Velg flere generasjoner når du vil utforske lenger tilbake.":
+  mode==="archive"?"Viser alle registrerte personer, også slektsgrener som ennå ikke er koblet sammen.":
+  "Viser registrerte slektsforbindelser. Bruk «🌱 Finn meg» for å se mors og fars side separat.";
 }
 function setZoom(next,cx,cy){
  const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
@@ -280,6 +441,7 @@ function fit(){
 function choose(id,scrollToDetails=true){
  if(!people.has(id))return;
  selected=id;
+ highlightConnections();
  const n=people.get(id);
  $("selected").classList.remove("hidden");
  $("selectedName").textContent=n.name;
@@ -293,6 +455,8 @@ function choose(id,scrollToDetails=true){
  if(scrollToDetails)$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function portTreeNode(id){return people.has(id)}
+$("branchSide").addEventListener("change",e=>{branchSide=e.target.value;render()});
+$("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
 $("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
 $("zoomOut").onclick=()=>setZoom(chart.scale/1.3);
 $("zoomFit").onclick=fit;
