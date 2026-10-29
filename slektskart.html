@@ -299,7 +299,12 @@ function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],shared
    if(link.barn_bruker_id!==accountId||!["mor","far"].includes(link.forelder_rolle))continue;
    const id=link.historisk_person_id?"h:"+link.historisk_person_id:
     link.forelder_bruker_id&&allowedVisible.has(link.forelder_bruker_id)?"v:"+link.forelder_bruker_id:null;
-   if(id&&people.has(id))aliases.set(link.forelder_rolle,id);
+   if(id&&people.has(id)){
+    aliases.set(link.forelder_rolle,id);
+    const node=people.get(id);
+    if(!node.slot)node.slot=link.forelder_rolle;
+    if(!node.gender)node.gender=roleGenders[link.forelder_rolle]||null;
+   }
   }
   for(const b of bridges)if(b.kobling==="samme_person"&&people.has("h:"+b.historisk_person_id)){
    const id="h:"+b.historisk_person_id;
@@ -472,15 +477,22 @@ function rootDistances(root,blocked,ids){
  return distances;
 }
 function classifyBranches(ids){
- const mum=rootDistances("p:mor","p:far",ids),dad=rootDistances("p:far","p:mor",ids);
+ // Godkjente foreldre kan være historiske eller nålevende noder i stedet
+ // for de opprinnelige p:mor / p:far plassholderne.
+ const parentId=role=>[...ids].find(id=>id!==mine&&people.get(id)?.slot===role)||
+  (ids.has("p:"+role)?"p:"+role:null);
+ const mom=parentId("mor"),dad=parentId("far");
+ const mum=mom?rootDistances(mom,dad,ids):new Map();
+ const paternal=dad?rootDistances(dad,mom,ids):new Map();
  const result=new Map();
- const maternal=new Set(["p:mor","p:mormor","p:morfar"]);
- const paternal=new Set(["p:far","p:farmor","p:farfar"]);
+ const maternalSlots=new Set(["mor","mormor","morfar"]);
+ const paternalSlots=new Set(["far","farmor","farfar"]);
  for(const id of ids){
   if(id===mine){result.set(id,"self");continue}
-  if(maternal.has(id)){result.set(id,"maternal");continue}
-  if(paternal.has(id)){result.set(id,"paternal");continue}
-  const m=mum.get(id)??Infinity,f=dad.get(id)??Infinity;
+  const slot=people.get(id)?.slot;
+  if(maternalSlots.has(slot)){result.set(id,"maternal");continue}
+  if(paternalSlots.has(slot)){result.set(id,"paternal");continue}
+  const m=mum.get(id)??Infinity,f=paternal.get(id)??Infinity;
   result.set(id,m<f?"maternal":f<m?"paternal":Number.isFinite(m)?"shared":"other");
  }
  return result;
@@ -578,7 +590,10 @@ function ancestryLayout(root,allowed,config){
   const family=links.filter(e=>e.to===id&&allowed.has(e.from))
    .map(e=>e.from).filter((x,i,list)=>list.indexOf(x)===i);
   family.sort((a,b)=>{
-   if(id===mine){return a==="p:mor"?-1:b==="p:mor"?1:a==="p:far"?-1:1}
+   if(id===mine){
+    const rank=x=>people.get(x)?.slot==="mor"?0:people.get(x)?.slot==="far"?1:2;
+    return rank(a)-rank(b);
+   }
    const na=people.get(a),nb=people.get(b);
    const genderRank=x=>x?.gender==="kvinne"?0:x?.gender==="mann"?1:2;
    return genderRank(na)-genderRank(nb)||titleFor(na).localeCompare(titleFor(nb),"nb");
@@ -601,8 +616,9 @@ function ancestryLayout(root,allowed,config){
  const rootWeight=weight(root);
  const loc=new Map(),sideMap=new Map();
  const sideFor=id=>{
-  if(id==="p:mor"||id==="p:mormor"||id==="p:morfar")return "maternal";
-  if(id==="p:far"||id==="p:farmor"||id==="p:farfar")return "paternal";
+  const slot=people.get(id)?.slot;
+  if(slot==="mor"||slot==="mormor"||slot==="morfar")return "maternal";
+  if(slot==="far"||slot==="farmor"||slot==="farfar")return "paternal";
   return null;
  };
  const maxDepth=Math.max(0,...distances.values());
@@ -617,7 +633,7 @@ function ancestryLayout(root,allowed,config){
   sideMap.set(id,sideFor(id)||side||(id===root?"self":"other"));
   let next=left;
   for(const p of parents.get(id)||[]){
-    const childSide=sideFor(p)||side||(id===root?(p==="p:mor"?"maternal":p==="p:far"?"paternal":"other"):"other");
+    const childSide=sideFor(p)||(side==="self"?"other":side)||"other";
     place(p,next,childSide);
     next+=widths.get(p)||1;
   }
