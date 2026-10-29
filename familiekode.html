@@ -1205,14 +1205,14 @@ function showVisitorHome(){
   return;
  }
  const hint=historicalNameClue(visitorName);
- if(hint){
-  openHistoricalPerson(hint.id,"family");
-  setImmersive(true);
-  $("branchTrailLine").textContent="Historisk navnespor: "+hint.name+
-   ". Samme etternavn beviser ikke at dere er i slekt. Logg inn personlig for å se foreldrene dine.";
- }else{
-  openWholeHistoricalMap();
- }
+ openWholeHistoricalMap();
+ // Hele kartet beholdes. Et historisk navnetreff brukes bare til å plassere
+ // kartet lesbart, ikke til å hevde slektskap eller skjule andre grener.
+ if(hint)requestAnimationFrame(()=>{
+  focusReadable(hint.id);
+  $("branchTrailLine").textContent="Hele slektstreet · Viser et historisk navnetreff på "+hint.name+
+   ". Dette bekrefter ikke at personen er i din familiegren.";
+ });
 }
 $("visitorNameForm").addEventListener("submit",e=>{
  e.preventDefault();
@@ -1361,12 +1361,8 @@ $("chooseAnother").addEventListener("click",returnToHistoricalChooser);
 function showMyParents(){
  if(!visitorName||!people.size){returnToHistoricalChooser();return;}
  const hint=historicalNameClue(visitorName);
- if(hint){
-  openHistoricalPerson(hint.id,"family");
-  if(!immersive)setImmersive(true);
-  $("branchTrailLine").textContent="Historisk navnespor: "+hint.name+
-   ". Slektskapet til deg er ikke bekreftet.";
- }else openWholeHistoricalMap();
+ openWholeHistoricalMap();
+ if(hint)requestAnimationFrame(()=>focusReadable(hint.id));
 }
 $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
