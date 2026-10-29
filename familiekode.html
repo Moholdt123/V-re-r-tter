@@ -1059,7 +1059,7 @@ function showVisitorHome(){
 }
 $("visitorNameForm").addEventListener("submit",e=>{
  e.preventDefault();
- const typed=$("visitorName").value.trim().replace(/\\s+/g," ");
+ const typed=$("visitorName").value.trim().replace(/\s+/g," ");
  if(typed.length<2||typed.length>90){$("visitorName").focus();return;}
  visitorName=typed;
  showVisitorHome();
