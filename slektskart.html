@@ -270,10 +270,16 @@ function connect(from,to,confidence,label){
  if(links.some(l=>l.from===from&&l.to===to))return;
  links.push({from,to,confidence:confidence||"familieopplysning",label:label||"forelder_barn"});
 }
-function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],sharedVisible=[],accountId=null,ghosts=[],approvedParentLinks=[]){
+function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],sharedVisible=[],accountId=null,ghosts=[],approvedParentLinks=[],approvedGrandparents=[]){
   people=new Map();links=[];mine=null;
   for(const p of history)addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,gender:p.kjonn||null,kind:"historical",dbid:p.id});
   for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
+  // Dersom medlemmet har samtykket til synlighet, kan navnet fra eget
+  // samtykke brukes som selv-node selv om privat profil ikke er utfylt.
+  if(!self&&accountId){
+   const me=sharedVisible.find(x=>x.bruker_id===accountId);
+   if(me)self={navn:me.navn,fodt_dato:null};
+  }
   // Synlige levende medlemmer vises uten automatisk konstruerte slektskapslenker.
   for(const person of sharedVisible){
    if(!person.bruker_id||!person.navn||person.bruker_id===accountId&&self)continue;
@@ -347,6 +353,25 @@ function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],shared
       const parent=link.historisk_person_id?"h:"+link.historisk_person_id:
         link.forelder_bruker_id?personNode(link.forelder_bruker_id):null;
       if(parent&&people.has(parent)&&people.has(child))connect(parent,child,"familieopplysning");
+    }
+    // Et godkjent besteforelderspor lar kartet finne riktig eldre gren,
+    // uten å påstå hvem den mellomliggende forelderen faktisk er.
+    for(const clue of approvedGrandparents){
+      const child=personNode(clue.barn_bruker_id);
+      const grandparent=clue.historisk_person_id?"h:"+clue.historisk_person_id:
+        clue.besteforelder_bruker_id?personNode(clue.besteforelder_bruker_id):null;
+      if(!people.has(child)||!grandparent||!people.has(grandparent))continue;
+      if(child===grandparent)continue;
+      // Hvis forelderen allerede er knyttet via to registrerte ledd,
+      // skal vi ikke lage en ekstra (fiktiv) foreldreplass.
+      const knownTwoHops=links.some(edge=>edge.to===child&&
+        links.some(older=>older.from===grandparent&&older.to===edge.from));
+      if(knownTwoHops)continue;
+      const intermediate="g:"+clue.id;
+      addNode({id:intermediate,name:"Foreldreledd · uavklart",kind:"provisional",
+        label:"Hvilken forelder som binder grenene sammen er ikke kjent"});
+      connect(grandparent,intermediate,"usikker");
+      connect(intermediate,child,"usikker");
     }
   }
 }
@@ -760,15 +785,15 @@ function render(){
   const side=sideMap.get(id);
   const g=svgEl("g",{transform:"translate("+p.x+" "+p.y+")",tabindex:0,role:"button","data-node":id,"aria-label":"Vis "+titleFor(n)});
   g.style.cursor="pointer";
-  const fill=n.kind==="anonymous"?"#e2e4e7":id===focused?"#c7e8cc":side==="maternal"?"#dceef5":side==="paternal"?"#f7ead1":isPrivate(n)?"#e3f2e5":"white";
-  const stroke=n.kind==="anonymous"?"#7b8490":id===selected?"#22533a":side==="maternal"?"#81b2c4":side==="paternal"?"#c5a46c":"#91b99b";
+  const fill=(n.kind==="anonymous"||n.kind==="provisional")?"#e2e4e7":id===focused?"#c7e8cc":side==="maternal"?"#dceef5":side==="paternal"?"#f7ead1":isPrivate(n)?"#e3f2e5":"white";
+  const stroke=(n.kind==="anonymous"||n.kind==="provisional")?"#7b8490":id===selected?"#22533a":side==="maternal"?"#81b2c4":side==="paternal"?"#c5a46c":"#91b99b";
   g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke,"stroke-width":id===selected?3:1.5}));
   const nameLines=nodeLabel(n.name);
   for(let j=0;j<nameLines.length;j++){
    const t=svgEl("text",{x:nodeW/2,y:21+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":600,"font-size":nameLines.length>2?12:14,fill:"#173e30"});
    t.textContent=nameLines[j];g.append(t);
   }
-  const sub=n.kind==="anonymous"?"Grå plass · ingen navn":n.kind==="optin"?"Nålevende · samtykket":n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
+  const sub=n.kind==="provisional"?"Ikke identifisert · mulig mellomledd":n.kind==="anonymous"?"Grå plass · ingen navn":n.kind==="optin"?"Nålevende · samtykket":n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
   const smaller=svgEl("text",{x:nodeW/2,y:nodeH-10,"text-anchor":"middle","font-family":"system-ui","font-size":11.5,fill:"#435d4a"});
   smaller.textContent=sub;g.append(smaller);
   g.addEventListener("click",()=>choose(id,false));
@@ -830,6 +855,7 @@ function descendantTitle(depth){
 function relationshipToMe(id){
  if(!mine||!people.has(mine))return {title:"Slektskapsgrad ikke tilgjengelig",detail:"Du trenger en egen privat profil som er knyttet til slektstreet."};
  const n=people.get(id);if(!n)return {title:"Ukjent slektning",detail:""};
+ if(n.kind==="provisional")return {title:"Uavklart foreldreledd",detail:"Dette er bare en foreløpig plass i anerekken. Vi vet ikke hvem forelderen er, eller om koblingen er via mors eller fars side."};
  if(id===mine)return {title:"Dette er deg 🌱",detail:"Utgangspunktet for slektstreet ditt."};
  const asc=ancestorPaths(mine,"up"),a=asc.get(id);
  if(a){
@@ -1045,11 +1071,11 @@ function choose(id,scrollToDetails=true){
  displayRelationship(id);
  showBranchPopup(id);
  $("descendPerson").disabled=childIds(id).length===0;
- $("selectedMeta").textContent=n.kind==="anonymous"?"Navn skjult · Privat familieplass. Tilknytningen må kontrolleres.":n.kind==="optin"?"Nålevende · Vises frivillig for godkjent familie. Ingen private opplysninger deles.":isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
- $("openProfile").disabled=n.kind==="optin"||n.kind==="anonymous";
- $("openProfile").textContent=n.kind==="anonymous"?"Ingen personprofil publisert":n.kind==="optin"?"Privat profil er ikke delt":isPrivate(n)?"Åpne mitt private familieutkast":"Åpne personprofil";
+ $("selectedMeta").textContent=n.kind==="provisional"?"Grå plass · mulig foreldreledd. Ikke identifisert eller fastslått hvilken side.":n.kind==="anonymous"?"Navn skjult · Privat familieplass. Tilknytningen må kontrolleres.":n.kind==="optin"?"Nålevende · Vises frivillig for godkjent familie. Ingen private opplysninger deles.":isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
+ $("openProfile").disabled=n.kind==="optin"||n.kind==="anonymous"||n.kind==="provisional";
+ $("openProfile").textContent=n.kind==="provisional"?"Ingen personprofil · uavklart ledd":n.kind==="anonymous"?"Ingen personprofil publisert":n.kind==="optin"?"Privat profil er ikke delt":isPrivate(n)?"Åpne mitt private familieutkast":"Åpne personprofil";
  $("openProfile").onclick=()=>{
-  if(n.kind==="optin"||n.kind==="anonymous")return;
+  if(n.kind==="optin"||n.kind==="anonymous"||n.kind==="provisional")return;
   if(isPrivate(n))location.href="./familie.html#family";
   else location.href="./familie.html#person="+encodeURIComponent(n.dbid);
  };
@@ -1183,7 +1209,7 @@ async function start(){
   $("loadingMsg").textContent="Du må være et aktivt familiemedlem for å bruke slektskartet.";
   return;
  }
- const [h,t,s,r,b,v,ghosts,approved]=await Promise.all([
+ const [h,t,s,r,b,v,ghosts,approved,grandparents]=await Promise.all([
   db.from("personer").select("id,navn,fodt_ar,dod_ar,kjonn").order("navn"),
   db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet"),
   db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",account.id).maybeSingle(),
@@ -1191,9 +1217,10 @@ async function start(){
   db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id),
   db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn"),
   db.from("familie_anonyme_slektninger").select("id,betegnelse,forelder_historisk_id,forelder_synlig_bruker_id,matchet_bruker_id").order("opprettet"),
-  db.from("familie_foreldrekoblinger").select("barn_bruker_id,forelder_rolle,forelder_bruker_id,historisk_person_id").eq("status","godkjent")
+  db.from("familie_foreldrekoblinger").select("barn_bruker_id,forelder_rolle,forelder_bruker_id,historisk_person_id").eq("status","godkjent"),
+  db.from("familie_besteforelderforslag").select("id,barn_bruker_id,besteforelder_bruker_id,historisk_person_id").eq("status","godkjent")
  ]);
- const err=h.error||t.error||s.error||r.error||b.error||v.error||ghosts.error||approved.error;
+ const err=h.error||t.error||s.error||r.error||b.error||v.error||ghosts.error||approved.error||grandparents.error;
  if(err){$("loadingMsg").textContent="Kunne ikke laste slektsdata. "+err.message;return}
  let sideBranches=[];
  if(member.rolle==="administrator"){
@@ -1203,7 +1230,7 @@ async function start(){
   if(privateError){$("loadingMsg").textContent="Kunne ikke hente privat slektsgren: "+privateError.message;return;}
   sideBranches=privateData||[];
  }
- rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[],sideBranches,v.data||[],account.id,ghosts.data||[],approved.data||[]);
+ rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[],sideBranches,v.data||[],account.id,ghosts.data||[],approved.data||[],grandparents.data||[]);
  renderOptInMembers(v.data||[]);
  renderAnonymousRelatives(ghosts.data||[],v.data||[],account.id);
  if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}
