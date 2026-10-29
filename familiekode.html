@@ -229,27 +229,35 @@ header .brand-text p,header .brand-text small{display:block}
  #privateFamilyQuickLink a{padding:7px 10px;font-size:11px}
 }
 
+
+#treeSidebar #anonymousBranchSection{flex:0 0 auto;margin:0;border-bottom:1px solid #d5e5d6;background:#fafcfa;padding:10px 12px;max-height:30vh;overflow-y:auto}
+#treeSidebar #anonymousBranchSection summary{font-size:12px;color:#345343;font-weight:750}
+#treeSidebar #anonymousBranchSection .muted{margin:6px 0;font-size:11px}
+#treeSidebar #anonymousBranchButtons{display:grid;gap:5px;padding:5px 0}
+#treeSidebar #anonymousBranchButtons button{font-size:12px;text-align:left;border:1px solid #c3cbd0;border-radius:8px;background:#edf0f2;color:#36434b;padding:9px}
+#treeSidebar #anonymousBranchButtons button:hover,#treeSidebar #anonymousBranchButtons button:focus-visible{background:#d9e3e8}
+
 </style>
 </head>
 <body>
-<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Familiekode · Historisk slektstre</p></span></a><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
+<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Familiekode · Hele familiekartet</p></span></a><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
 <main>
 <section class="card" id="loading" style="max-width:560px;margin:25px auto;padding:25px">
   <div style="font-size:45px;text-align:center">🌳</div>
   <h2 style="text-align:center">Velkommen til Våre røtter</h2>
-  <p class="muted" style="text-align:center">Familiens historiske slektstre. Skriv inn familiekoden du fikk av den som inviterte deg.</p>
+  <p class="muted" style="text-align:center">Hele slektstreet – med historiske navn og grå, navnløse grener. Skriv inn familiekoden du fikk av den som inviterte deg.</p>
   <form id="codeForm">
     <label for="familyCode" style="display:block;font-weight:700;margin-bottom:6px">Familiekode</label>
     <input id="familyCode" type="password" minlength="6" maxlength="25" placeholder="Skriv familiens kode" autocomplete="off" required style="width:100%;padding:13px;border:1px solid #acc6b3;border-radius:10px">
     <button type="submit" style="display:block;width:100%;padding:14px;margin-top:14px">🌳 Åpne slektstreet</button>
   </form>
-  <p class="muted" id="loadingMsg" aria-live="polite">Bare historiske slektsopplysninger vises med familiekoden.</p>
+  <p class="muted" id="loadingMsg" aria-live="polite">Familiekoden viser historiske navn og registrerte grå familieplasser uten private navn.</p>
   <p class="muted">Vil du legge inn historier eller redigere opplysninger? Da trenger du personlig innlogging via <a href="./familie.html">familierommet</a>.</p>
 </section>
 <section class="card hidden" id="visitorSetup" style="max-width:600px;margin:25px auto;padding:clamp(20px,4vw,34px)">
   <div style="font-size:38px;text-align:center" aria-hidden="true">🌱</div>
   <h2 style="text-align:center">Hvem utforsker slekta i dag?</h2>
-  <p class="muted" style="text-align:center">Familiekoden er godkjent. Skriv navnet ditt, så åpner det historiske slektskartet seg automatisk på hele skjermen.</p>
+  <p class="muted" style="text-align:center">Familiekoden er godkjent. Skriv navnet ditt, så åpner hele familiekartet seg i fullskjerm. Navn på ikke-navngitte familiemedlemmer vises som grå plasser.</p>
   <form id="visitorNameForm">
     <label for="visitorName" style="display:block;font-weight:750;margin:15px 0 7px">Ditt navn</label>
     <input id="visitorName" name="name" type="text" minlength="2" maxlength="90" autocomplete="name" placeholder="Fornavn og etternavn" required style="width:100%;padding:13px;border:1px solid #b6cdb9;border-radius:11px">
@@ -264,8 +272,8 @@ header .brand-text p,header .brand-text small{display:block}
  <section id="treeWelcome" aria-label="Velg hvordan du vil utforske">
   <h3 id="viewerWelcomeTitle">Velkommen til slektstreet!</h3>
   <p>Vil du se alt som er registrert, eller begynne hos en bestemt avdød slektning?</p>
-  <button id="openWholeMap" type="button">🌳 Åpne hele det historiske slektstreet
-   <span>Vis alle registrerte historiske personer. Dra rundt og zoom inn for å lese navnene.</span>
+  <button id="openWholeMap" type="button">🌳 Åpne hele slektstreet
+   <span>Vis registrerte historiske personer og grå navnløse familiegrener. Dra og zoom for å utforske.</span>
   </button>
   <p class="directHint">Kartet er stort. «Oversikt» viser hele kartet samlet; søk eller velg en person for et mer lesbart utsnitt.</p>
  </section>
@@ -282,7 +290,7 @@ header .brand-text p,header .brand-text small{display:block}
    </div>
  </section>
  <div class="row" style="justify-content:space-between;margin:10px 0">
-   <p class="muted" style="margin:0">Du ser bare historiske personer. Ingen private familiebånd utledes fra navnet du skrev.</p>
+   <p class="muted" style="margin:0">Historiske navn og anonymiserte slektsforbindelser vises. Navnet du skriver beviser ikke hvem du er i familien.</p>
    <button id="changeViewerName" type="button" class="secondary">Bytt navn</button>
  </div>
  <div class="searchline">
@@ -296,7 +304,7 @@ header .brand-text p,header .brand-text small{display:block}
  <aside id="privateSelfHint" aria-label="Finn ditt eget private slektstre">
   <div>
    <strong>🌱 Vil du finne deg selv?</strong>
-   <p>Familiepassordet viser kun historiske personer. Bruk personlig innlogging for din private familiegren.</p>
+   <p>Familiekoden viser historiske personer og anonyme familieplasser. For å se foreldrene dine med private navn må du bruke personlig innlogging.</p>
   </div>
   <a href="./familie.html">🔐 Personlig innlogging</a>
  </aside>
@@ -306,7 +314,7 @@ header .brand-text p,header .brand-text small{display:block}
    <button data-mode="family" aria-pressed="true">Slekt rundt person</button>
    <button data-mode="ancestors" aria-pressed="false">Forfedre</button>
    <button data-mode="descendants" aria-pressed="false">Etterkommere</button>
-   <button data-mode="archive" aria-pressed="false">Alle historiske</button>
+   <button data-mode="archive" aria-pressed="false">Hele slektstreet</button>
  </div>
 
  <div id="branchControls">
@@ -369,28 +377,33 @@ header .brand-text p,header .brand-text small{display:block}
    </div>
   </div>
 
-  <aside id="treeSidebar" aria-label="Søk og historisk personliste">
+  <aside id="treeSidebar" aria-label="Søk i historiske navn og skjulte familiegrener">
    <div class="side-intro">
     <div class="side-brand"><span aria-hidden="true">🌿</span> Ditt slektsarkiv
       <button id="sideClose" type="button" class="secondary" aria-label="Lukk søkepanel">✕</button>
     </div>
     <strong id="sidebarName">Velkommen!</strong>
-    <p>Velg en historisk slektning for å utforske en gren. Kartet til høyre viser hele arkivet ved oppstart.</p>
+    <p>Søk etter et historisk navn, eller åpne en grå familiegren for å følge registrerte barn og barnebarn.</p>
     <label for="sideSearch">Søk etter slektning</label>
     <input id="sideSearch" type="search" placeholder="Skriv navn …" autocomplete="off" aria-label="Søk blant historiske personer">
     <div id="sideCount" class="muted" aria-live="polite"></div>
     <button id="sideAll" type="button" class="secondary">🌳 Vis hele slektstreet</button>
    </div>
+   <details id="anonymousBranchSection" class="hidden">
+    <summary>🌫️ Skjulte familiegrener <span id="anonymousBranchCount"></span></summary>
+    <p class="muted">Her er registrerte grener uten private navn. Klikk for å se barna og barnebarna i kartet.</p>
+    <div id="anonymousBranchButtons"></div>
+   </details>
    <div class="side-list" role="region" aria-label="Historiske personer">
     <table class="side-table">
      <thead><tr><th scope="col">Navn</th><th scope="col">År</th></tr></thead>
      <tbody id="sidebarPeople"></tbody>
     </table>
-    <p id="sideNoResults" class="muted hidden">Ingen historiske treff. Levende familiemedlemmer er ikke med i dette søket.</p>
+    <p id="sideNoResults" class="muted hidden">Ingen historiske navnetreff. Bruk «Skjulte familiegrener» for grå plasser.</p>
    </div>
    <div class="side-foot">
     <strong>Vil du finne deg selv i slekta?</strong>
-    <p>Navnet du skrev er bare en velkomst. For å plassere deg riktig med foreldre og levende slektninger må du logge inn personlig.</p>
+    <p>Grå familieplasser viser kun registrerte forbindelser, aldri private navn. For å se dine egne foreldre ved navn trenger du personlig innlogging.</p>
     <a href="./familie.html">🔐 Personlig familieinnlogging</a>
     <button id="sideChangeName" type="button" class="secondary">Bytt navn</button>
    </div>
@@ -902,11 +915,11 @@ function render(){
  chart={width,height,scale:1};autoFrame(loc,ids,nodeW,nodeH);highlightConnections();
  updateBranchControls();
  $("treeCount").textContent=ids.size+" av "+people.size+" familieplasser og historiske personer · "+keys.length+" generasjonsnivåer";
- $("historicalFocusLabel").textContent=mode==="archive"?"Viser alle registrerte historiske personer.":(mode==="ancestors"?"Forfedre til ":mode==="descendants"?"Etterkommere av ":"Familien rundt ")+(people.get(focused)?.name||"valgt person")+". Endre person ved å søke etter et navn.";
+ $("historicalFocusLabel").textContent=mode==="archive"?"Viser hele familiearkivet med historiske navn og grå familieplasser.":(mode==="ancestors"?"Forfedre til ":mode==="descendants"?"Etterkommere av ":"Familien rundt ")+(people.get(focused)?.name||"valgt person")+". Endre person ved å søke etter et navn.";
  $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
  $("status").textContent=layout.ancestryTree?
   "Registrerte familiegrener. Grå personer har skjulte navn, og kan åpnes for å se flere grener. Stiplede linjer betyr usikker kobling.":
-  mode==="archive"?"Viser hele det historiske arkivet. Velg Forfedre eller søk etter en person for mer oversikt.":
+  mode==="archive"?"Hele det registrerte slektstreet. Grå bokser har skjulte navn – trykk for å åpne familiegrenen.":
   "Viser registrerte historiske slektslinjer rundt valgt person.";
 }
 
@@ -1227,6 +1240,32 @@ function setSidebarOpen(open){
  // En rendring tilpasser kartets lesbarhet til tilgjengelig bredde.
  if(immersive&&people.size)requestAnimationFrame(()=>focusReadable(focused||selected||[...people.keys()][0]));
 }
+function renderAnonymousBranchList(){
+ const nodes=[...people.values()].filter(p=>p.kind==="anonymous");
+ const section=$("anonymousBranchSection"),container=$("anonymousBranchButtons");
+ container.replaceChildren();
+ section.classList.toggle("hidden",nodes.length===0);
+ $("anonymousBranchCount").textContent="("+nodes.length+")";
+ // Vis først grener som kommer direkte fra en navngitt historisk person.
+ const sorted=nodes.map(node=>{
+  const historical=links.find(l=>l.to===node.id&&people.get(l.from)?.kind==="historical");
+  const children=childIds(node.id).length;
+  return {node,parent:historical?people.get(historical.from):null,children};
+ }).sort((a,b)=>Number(Boolean(b.parent))-Number(Boolean(a.parent))||b.children-a.children||a.node.id.localeCompare(b.node.id));
+ for(const entry of sorted.slice(0,60)){
+  const button=document.createElement("button");button.type="button";
+  const label=entry.node.name;
+  button.textContent=entry.parent?
+    "🌫️ "+label+" · Gren etter "+entry.parent.name:
+    "🌫️ "+label+(entry.children?" · "+entry.children+" registrerte barn":"");
+  button.addEventListener("click",()=>{
+   if(!immersive)setImmersive(true);
+   exploreBranch(entry.node.id,"family");
+   if(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)setSidebarOpen(false);
+  });
+  container.append(button);
+ }
+}
 function renderSidebarPeople(){
  const q=escapeSearch($("sideSearch").value);
  const sorted=[...people.values()].filter(p=>p.kind==="historical"&&escapeSearch(p.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"nb"));
@@ -1417,6 +1456,7 @@ async function displayTree(data){
  visitorName="";$("visitorName").value="";
  renderStartingPeople();
  renderSidebarPeople();
+ renderAnonymousBranchList();
  returnToHistoricalChooser();
  $("visitorSetup").classList.remove("hidden");
 }
