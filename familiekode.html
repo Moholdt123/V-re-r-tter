@@ -912,6 +912,7 @@ function exploreBranch(id,nextMode){
    if(branchHistory.length>45)branchHistory.shift();
  }
  focused=id;selected=id;mode=nextMode;
+ setVisitorTreeLabel(people.get(id));
  // Å utforske en forfar viser alle registrerte ledd i grenen, ikke bare de nærmeste.
  generationLimit="all";
  $("generationLimit").value="all";$("fullGenerationLimit").value="all";
@@ -923,6 +924,8 @@ function previousBranch(){
  const last=branchHistory.pop();
  if(!last)return;
  focused=last.focused;mode=last.mode;selected=last.selected;
+ if(focused&&people.has(focused))setVisitorTreeLabel(people.get(focused));
+ else if(mode==="archive")setVisitorTreeLabel(null,true);
  generationLimit=last.generationLimit;
 
  $("generationLimit").value=generationLimit;$("fullGenerationLimit").value=generationLimit;
