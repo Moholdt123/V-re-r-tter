@@ -182,7 +182,28 @@ header .brand-text p,header .brand-text small{display:block}
     <p id="livingSelfStatus" class="status" aria-live="polite"></p>
   </section>
 
-  <section class="card" id="privateBranchPanel" style="margin-bottom:18px">
+  <section class="card" id="shareLivingPanel" style="margin-bottom:18px;border:1px solid #c5ddc9;background:#f6faf6">
+ <div class="eyebrow">Ditt valg · Privat inntil du samtykker</div>
+ <h3>🌱 Skal andre i familien se at du lever?</h3>
+ <p class="muted">Du bestemmer selv. Hvis du sier ja, vises <strong>kun navnet du velger og at du er nålevende</strong> for andre godkjente familiemedlemmer som logger inn personlig. Fødselsdato, e-postadresse og private familieopplysninger deles ikke. Familiekoden alene gir ikke innsyn.</p>
+ <form id="shareLivingForm">
+  <label for="shareLivingName">Navnet som kan vises til familien</label>
+  <input id="shareLivingName" type="text" maxlength="150" autocomplete="name" placeholder="Ditt navn" required>
+  <label for="shareLivingToggle" style="display:flex;align-items:flex-start;gap:11px;background:#fff;border:1px solid #c7dacb;padding:14px;border-radius:12px;font-size:15px;font-weight:650">
+   <input id="shareLivingToggle" type="checkbox" style="width:22px;height:22px;flex:0 0 22px;margin:2px 0;accent-color:var(--dark)">
+   <span>Ja, vis meg som nålevende for godkjente familiemedlemmer.</span>
+  </label>
+  <button id="shareLivingSave" type="submit" style="margin-top:12px">Lagre mitt valg</button>
+ </form>
+ <p id="shareLivingStatus" class="status" role="status" aria-live="polite">Ikke delt. Du bestemmer selv om du vil bli synlig.</p>
+ <p class="muted">Du kan skru av synligheten og lagre på nytt når som helst. Slektskapsforbindelser legges ikke automatisk til på grunnlag av navnet.</p>
+</section>
+<section class="card" id="visibleRelativesPanel" style="margin-bottom:18px">
+ <h3>👪 Familiemedlemmer som har valgt å vises</h3>
+ <p class="muted">Denne oversikten vises bare etter personlig innlogging. Her står kun medlemmer som selv har samtykket.</p>
+ <div id="visibleRelativesList" class="family-links" aria-live="polite"></div>
+</section>
+<section class="card" id="privateBranchPanel" style="margin-bottom:18px">
     <div class="eyebrow">Personlig og privat · Familieopplysninger til kontroll</div>
     <h3>Min familiegren 🌳</h3>
     <p class="muted">Her er et <strong>privat utkast</strong> til din nærmeste familie basert på opplysninger du tidligere har delt. Foreldre og besteforeldre er ikke med i det felles slektstreet ennå. Trykk på et navn for å rette det.</p>
@@ -324,6 +345,49 @@ $("livingSelfForm").addEventListener("submit",async event=>{
 });
 
 
+// Frivillig synlighet for levende medlemmer, beskyttet av RLS.
+async function loadOwnVisibility(){
+ if(!user||profile?.status!=="aktiv")return;
+ const {data,error}=await db.from("familie_synlige_profiler")
+  .select("navn,synlig_for_familien").eq("bruker_id",user.id).maybeSingle();
+ if(error){notice("shareLivingStatus","Kunne ikke hente valget: "+authErrorMessage(error),true);return;}
+ $("shareLivingName").value=data?.navn||$("livingSelfName").value.trim()||profile.visningsnavn||"";
+ $("shareLivingToggle").checked=data?.synlig_for_familien===true;
+ notice("shareLivingStatus",data?.synlig_for_familien===true?
+  "Du er synlig med dette navnet for godkjente familiemedlemmer. Du kan slå av når som helst.":
+  "Ikke delt. Bare du kan velge å bli synlig.");
+}
+async function loadVisibleRelatives(){
+ if(!user||profile?.status!=="aktiv")return;
+ const target=$("visibleRelativesList");
+ target.replaceChildren();
+ const {data,error}=await db.from("familie_synlige_profiler")
+  .select("navn").eq("synlig_for_familien",true).order("navn");
+ if(error){target.append(text("p","Kunne ikke hente synlige familiemedlemmer.","muted"));return;}
+ if(!(data||[]).length){target.append(text("p","Ingen har valgt å vises ennå.","muted"));return;}
+ for(const person of data){
+  const card=document.createElement("span");
+  card.style.cssText="display:inline-flex;align-items:center;border:1px solid #c7dccb;background:#f1f8f2;padding:9px 12px;border-radius:10px;font-size:13px;color:var(--dark)";
+  card.textContent="🌱 "+person.navn+" · Nålevende";
+  target.append(card);
+ }
+}
+$("shareLivingForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(!user||profile?.status!=="aktiv")return;
+ const button=$("shareLivingSave");
+ const navn=$("shareLivingName").value.trim().replace(/\s+/g," ");
+ if(navn.length<2||navn.length>150){notice("shareLivingStatus","Skriv et navn på mellom 2 og 150 tegn.",true);return;}
+ button.disabled=true;notice("shareLivingStatus","Lagrer valget ...");
+ const {error}=await db.from("familie_synlige_profiler").upsert({
+  bruker_id:user.id,navn,
+  synlig_for_familien:$("shareLivingToggle").checked===true,
+  oppdatert:new Date().toISOString()
+ },{onConflict:"bruker_id"});
+ if(error)notice("shareLivingStatus","Kunne ikke lagre: "+authErrorMessage(error),true);
+ else{await loadOwnVisibility();await loadVisibleRelatives();}
+ button.disabled=false;
+});
 const privateFamilySlots=[
   ["mormor","Mormor"],["morfar","Morfar"],
   ["farmor","Farmor"],["farfar","Farfar"],
@@ -528,6 +592,7 @@ async function updateState(){
  await loadPrivate();
  if(location.hash==="#family")$("privateBranchPanel").scrollIntoView({behavior:"smooth",block:"start"});
  if(location.hash==="#forskningsspor")$("researchPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ if(location.hash==="#shareLivingPanel")$("shareLivingPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("emailForm").addEventListener("submit",async e=>{
  e.preventDefault();
