@@ -172,6 +172,53 @@ header .brand-text p,header .brand-text small{display:block}
 #historicalFindRow label{font-weight:750}
 #personDirectory{max-width:100%}
 
+
+/* Kartet er første visning etter familiekode og navn. Søket er et rolig sidepanel. */
+#treeSidebar{display:none}
+#treeWrap.immersive{display:grid!important;grid-template-columns:minmax(252px,295px) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+#treeWrap.immersive #fullScreenBar{grid-column:1/-1;grid-row:1;min-width:0}
+#treeWrap.immersive #treeSidebar{grid-column:1;grid-row:2;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;background:#fff;border-right:1px solid #d5e4d6;z-index:3}
+#treeWrap.immersive #treePort{grid-column:2;grid-row:2;min-width:0;min-height:0;height:100%!important;max-height:none!important}
+#treeWrap.immersive #branchPopup{left:calc(295px + 14px)}
+#treeWrap.immersive.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}
+#treeWrap.immersive.sidebar-collapsed #treeSidebar{display:none}
+#treeWrap.immersive.sidebar-collapsed #branchPopup{left:14px}
+#treeSidebar .side-intro{padding:17px 15px 11px;border-bottom:1px solid #e0ece0;flex-shrink:0;background:#f8fcf8}
+#treeSidebar .side-brand{display:flex;align-items:center;justify-content:space-between;font-weight:750;color:var(--forest);font-size:13px;margin-bottom:12px}
+#treeSidebar #sideClose{padding:5px 9px;font-size:12px;display:none}
+#treeSidebar #sidebarName{display:block;color:var(--forest);font:normal 24px Georgia,serif;line-height:1.2;overflow-wrap:anywhere}
+#treeSidebar p{font-size:12px;line-height:1.45;color:var(--muted);margin:9px 0 11px}
+#treeSidebar label{display:block;font-size:12px;font-weight:750;color:var(--forest);margin-bottom:6px}
+#treeSidebar input{display:block;width:100%;min-width:0;border:1px solid #b6cdb9;border-radius:10px;padding:12px;background:#fff}
+#treeSidebar #sideCount{font-size:11px;margin:9px 0}
+#treeSidebar #sideAll{width:100%;text-align:center;padding:9px 10px}
+#treeSidebar .side-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#treeSidebar .side-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+#treeSidebar .side-table th{position:sticky;top:0;background:#edf5ee;padding:9px 12px;text-align:left;font-size:11px;color:#4d6e5a;z-index:1;border-bottom:1px solid #dae6dd}
+#treeSidebar .side-table th:last-child{width:76px}
+#treeSidebar .side-table td{border-bottom:1px solid #edf1ed;vertical-align:middle;padding:0}
+#treeSidebar .side-table td:last-child{font-size:11px;color:#607567;padding:9px 7px;text-align:right;font-variant-numeric:tabular-nums}
+#treeSidebar .side-table button{width:100%;text-align:left;background:transparent;color:#244c32;border-radius:0;padding:11px 9px 11px 13px;font-size:12px;line-height:1.3;font-weight:600;overflow-wrap:anywhere}
+#treeSidebar .side-table button:hover,#treeSidebar .side-table button:focus-visible,#treeSidebar .side-table tr[aria-selected=true] button{background:#eaf5eb;color:#143f2b}
+#treeSidebar #sideNoResults{padding:13px}
+#treeSidebar .side-foot{padding:13px 15px;background:#f3f8f3;border-top:1px solid #dbeadd;flex-shrink:0}
+#treeSidebar .side-foot strong{font-size:12px;color:var(--forest)}
+#treeSidebar .side-foot p{margin:5px 0 10px}
+#treeSidebar .side-foot a{display:block;padding:9px 8px;background:var(--forest);color:#fff;text-align:center;border-radius:9px;font-size:12px;text-decoration:none;font-weight:750}
+#treeSidebar #sideChangeName{width:100%;margin-top:7px;padding:8px}
+@media(max-width:760px){
+ #treeWrap.immersive,#treeWrap.immersive.sidebar-collapsed{grid-template-columns:minmax(0,1fr)}
+ #treeWrap.immersive #fullScreenBar{grid-column:1;grid-row:1}
+ #treeWrap.immersive #treePort{grid-column:1;grid-row:2}
+ #treeWrap.immersive #treeSidebar{position:absolute;inset:0 auto 0 0;width:min(88vw,345px);height:100%;box-shadow:8px 0 30px #19382445;z-index:10;border-right:1px solid #b8d0bd}
+ #treeWrap.immersive #treeSidebar #sideClose{display:inline-block}
+ #treeWrap.immersive #branchPopup{left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+ #treeWrap.immersive #mapControls{bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+ #treeWrap.immersive #fullScreenBar{padding:calc(env(safe-area-inset-top,0px) + 7px) 9px 7px}
+ #treeWrap.immersive #fullScreenBar .fullRow strong{font-size:13px}
+ #treeWrap.immersive #fullScreenBar button{font-size:11px;padding:7px 9px}
+}
+
 </style>
 </head>
 <body>
@@ -192,13 +239,13 @@ header .brand-text p,header .brand-text small{display:block}
 <section class="card hidden" id="visitorSetup" style="max-width:600px;margin:25px auto;padding:clamp(20px,4vw,34px)">
   <div style="font-size:38px;text-align:center" aria-hidden="true">🌱</div>
   <h2 style="text-align:center">Hvem utforsker slekta i dag?</h2>
-  <p class="muted" style="text-align:center">Familiekoden er godkjent! Skriv navnet ditt, så får du din egen startside i slektskartet.</p>
+  <p class="muted" style="text-align:center">Familiekoden er godkjent. Skriv navnet ditt, så åpner det historiske slektskartet seg automatisk på hele skjermen.</p>
   <form id="visitorNameForm">
     <label for="visitorName" style="display:block;font-weight:750;margin:15px 0 7px">Ditt navn</label>
     <input id="visitorName" name="name" type="text" minlength="2" maxlength="90" autocomplete="name" placeholder="Fornavn og etternavn" required style="width:100%;padding:13px;border:1px solid #b6cdb9;border-radius:11px">
-    <button type="submit" style="width:100%;margin-top:14px;padding:14px">🌿 Fortsett til min startside</button>
+    <button type="submit" style="width:100%;margin-top:14px;padding:14px">🌳 Åpne slektskartet mitt</button>
   </form>
-  <p class="muted" style="margin:17px 0 0">Navnet brukes bare her mens du utforsker. Det lagres ikke i familiearkivet. For å vise foreldre og nålevende familiemedlemmer trenger du <a href="./familie.html">personlig innlogging</a>.</p>
+  <p class="muted" style="margin:17px 0 0">Navnet brukes bare til velkomsten i denne visningen, og lagres ikke i familiearkivet. Et navn alene kan ikke bevise hvem du er i slekta. For din egen familiegren og nålevende personer bruker du <a href="./familie.html">personlig innlogging</a>.</p>
 </section>
 <section id="app" class="hidden">
 <div class="card">
@@ -290,6 +337,7 @@ header .brand-text p,header .brand-text small{display:block}
     <button id="fullBack" type="button" class="secondary" disabled>← Tilbake</button>
     <button id="fullHome" type="button" class="secondary">🌳 Til start</button>
     <button id="fullOverview" type="button" class="secondary">Oversikt</button>
+    <button id="fullSidebarToggle" type="button" class="secondary" aria-controls="treeSidebar" aria-expanded="true">☰ Skjul søk</button>
     <button id="fullClose" type="button">✕ Lukk</button>
    </div>
    <div id="branchTrailLine" role="status" aria-live="polite">Trykk på en person for å følge en familiegren</div>
@@ -307,6 +355,32 @@ header .brand-text p,header .brand-text small{display:block}
    </div>
   </div>
 
+  <aside id="treeSidebar" aria-label="Søk og historisk personliste">
+   <div class="side-intro">
+    <div class="side-brand"><span aria-hidden="true">🌿</span> Ditt slektsarkiv
+      <button id="sideClose" type="button" class="secondary" aria-label="Lukk søkepanel">✕</button>
+    </div>
+    <strong id="sidebarName">Velkommen!</strong>
+    <p>Velg en historisk slektning for å utforske en gren. Kartet til høyre viser hele arkivet ved oppstart.</p>
+    <label for="sideSearch">Søk etter slektning</label>
+    <input id="sideSearch" type="search" placeholder="Skriv navn …" autocomplete="off" aria-label="Søk blant historiske personer">
+    <div id="sideCount" class="muted" aria-live="polite"></div>
+    <button id="sideAll" type="button" class="secondary">🌳 Vis hele slektstreet</button>
+   </div>
+   <div class="side-list" role="region" aria-label="Historiske personer">
+    <table class="side-table">
+     <thead><tr><th scope="col">Navn</th><th scope="col">År</th></tr></thead>
+     <tbody id="sidebarPeople"></tbody>
+    </table>
+    <p id="sideNoResults" class="muted hidden">Ingen historiske treff. Levende familiemedlemmer er ikke med i dette søket.</p>
+   </div>
+   <div class="side-foot">
+    <strong>Vil du finne deg selv i slekta?</strong>
+    <p>Navnet du skrev er bare en velkomst. For å plassere deg riktig med foreldre og levende slektninger må du logge inn personlig.</p>
+    <a href="./familie.html">🔐 Personlig familieinnlogging</a>
+    <button id="sideChangeName" type="button" class="secondary">Bytt navn</button>
+   </div>
+  </aside>
 
   <aside id="branchPopup" class="hidden" aria-live="polite" aria-label="Utforsk valgt slektning">
    <div class="row space">
@@ -913,6 +987,7 @@ function exploreBranch(id,nextMode){
  }
  focused=id;selected=id;mode=nextMode;
  setVisitorTreeLabel(people.get(id));
+ renderSidebarPeople();
  // Å utforske en forfar viser alle registrerte ledd i grenen, ikke bare de nærmeste.
  generationLimit="all";
  $("generationLimit").value="all";$("fullGenerationLimit").value="all";
@@ -926,6 +1001,7 @@ function previousBranch(){
  focused=last.focused;mode=last.mode;selected=last.selected;
  if(focused&&people.has(focused))setVisitorTreeLabel(people.get(focused));
  else if(mode==="archive")setVisitorTreeLabel(null,true);
+ renderSidebarPeople();
  generationLimit=last.generationLimit;
 
  $("generationLimit").value=generationLimit;$("fullGenerationLimit").value=generationLimit;
@@ -972,6 +1048,7 @@ function setImmersive(on){
   generationLimit="all";
   $("fullBranchSide").value=branchSide;
   $("fullGenerationLimit").value="all";
+  setSidebarOpen(!(window.matchMedia&&window.matchMedia("(max-width:760px)").matches));
   render();
   requestAnimationFrame(()=>focusReadable(focused||mine));
  }else{
@@ -1058,7 +1135,10 @@ function showVisitorHome(){
  $("app").classList.remove("hidden");
  $("viewerPageTitle").textContent=visitorName+" · Slektstreet 🌳";
  $("viewerWelcomeTitle").textContent="Velkommen, "+visitorName+"! 🌿";
- returnToHistoricalChooser();
+ $("sidebarName").textContent="Hei, "+visitorName+"! 🌱";
+ $("sideSearch").value="";
+ renderSidebarPeople();
+ openWholeHistoricalMap();
 }
 $("visitorNameForm").addEventListener("submit",e=>{
  e.preventDefault();
@@ -1066,7 +1146,6 @@ $("visitorNameForm").addEventListener("submit",e=>{
  if(typed.length<2||typed.length>90){$("visitorName").focus();return;}
  visitorName=typed;
  showVisitorHome();
- $("personDirectory").focus();
 });
 $("changeViewerName").addEventListener("click",()=>{
  if(immersive)setImmersive(false);
@@ -1075,6 +1154,48 @@ $("changeViewerName").addEventListener("click",()=>{
  $("visitorSetup").classList.remove("hidden");
  $("visitorName").focus();
 });
+/* Sidepanelet inneholder bare døde historiske personer fra familiekodearkivet.
+   Navnet på besøkende blir aldri brukt som verifisert person-ID. */
+let sidebarOpen=true;
+function setSidebarOpen(open){
+ sidebarOpen=Boolean(open);
+ $("treeWrap").classList.toggle("sidebar-collapsed",!sidebarOpen);
+ $("fullSidebarToggle").setAttribute("aria-expanded",String(sidebarOpen));
+ $("fullSidebarToggle").textContent=sidebarOpen?"☰ Skjul søk":"☰ Søk og personer";
+ $("treeSidebar").setAttribute("aria-hidden",String(!sidebarOpen));
+ // En rendring tilpasser kartets lesbarhet til tilgjengelig bredde.
+ if(immersive&&people.size)requestAnimationFrame(()=>focusReadable(focused||selected||[...people.keys()][0]));
+}
+function renderSidebarPeople(){
+ const q=escapeSearch($("sideSearch").value);
+ const sorted=[...people.values()].filter(p=>escapeSearch(p.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"nb"));
+ const list=$("sidebarPeople");
+ list.replaceChildren();
+ const fragment=document.createDocumentFragment();
+ for(const person of sorted.slice(0,250)){
+  const tr=document.createElement("tr");
+  tr.setAttribute("aria-selected",String(person.id===focused));
+  const name=document.createElement("td"),year=document.createElement("td");
+  const button=document.createElement("button");button.type="button";
+  button.textContent=person.name;
+  button.setAttribute("aria-label","Vis slekta rundt "+person.name);
+  button.addEventListener("click",()=>{
+   openHistoricalPerson(person.id,"family");
+   if(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)setSidebarOpen(false);
+  });
+  name.append(button);
+  year.textContent=(person.born||"?")+"–"+(person.died||"?");
+  tr.append(name,year);fragment.append(tr);
+ }
+ list.append(fragment);
+ $("sideCount").textContent=sorted.length+" av "+people.size+" historiske personer";
+ $("sideNoResults").classList.toggle("hidden",sorted.length!==0);
+}
+$("sideSearch").addEventListener("input",renderSidebarPeople);
+$("fullSidebarToggle").addEventListener("click",()=>setSidebarOpen(!sidebarOpen));
+$("sideClose").addEventListener("click",()=>setSidebarOpen(false));
+$("sideAll").addEventListener("click",()=>{openWholeHistoricalMap();if(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)setSidebarOpen(false)});
+$("sideChangeName").addEventListener("click",()=>$("changeViewerName").click());
 function setVisitorTreeLabel(person,whole=false){
  $("viewerTreeLabel").textContent=whole?
   "🌳 Hele det historiske arkivet · Visning for "+visitorName:
@@ -1094,6 +1215,7 @@ function openHistoricalPerson(id,view="ancestors"){
  $("branchPopup").classList.add("hidden");
  $("search").value=people.get(id).name;
  setVisitorTreeLabel(people.get(id));
+ renderSidebarPeople();
  $("matches").replaceChildren();
  syncMode();render();choose(id,false);
  requestAnimationFrame(()=>focusReadable(id));
@@ -1111,9 +1233,11 @@ function openWholeHistoricalMap(){
  $("branchPopup").classList.add("hidden");
  $("search").value="";$("matches").replaceChildren();
  setVisitorTreeLabel(null,true);
+ renderSidebarPeople();
  $("historicalFocusLabel").textContent="Viser hele det historiske arkivet. Finn en slektning i søkefeltet eller bruk zoom for å utforske.";
  syncMode();render();setImmersive(true);
- requestAnimationFrame(()=>fit());
+ // Start med navnene lesbare fremfor å krympe et stort historisk tre til en prikk.
+ requestAnimationFrame(()=>focusReadable(focused||[...people.keys()][0]));
 }
 function returnToHistoricalChooser(){
  if(immersive)setImmersive(false);
@@ -1135,7 +1259,8 @@ $("openDirectoryPerson").addEventListener("click",()=>{
 });
 $("chooseAnother").addEventListener("click",returnToHistoricalChooser);
 function showMyParents(){
- returnToHistoricalChooser();
+ if(visitorName&&people.size)openWholeHistoricalMap();
+ else returnToHistoricalChooser();
 }
 $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
@@ -1216,6 +1341,7 @@ async function displayTree(data){
  $("loading").classList.add("hidden");$("app").classList.add("hidden");
  visitorName="";$("visitorName").value="";
  renderStartingPeople();
+ renderSidebarPeople();
  returnToHistoricalChooser();
  $("visitorSetup").classList.remove("hidden");
 }
