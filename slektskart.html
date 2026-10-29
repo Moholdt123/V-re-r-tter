@@ -7,6 +7,8 @@
 <meta name="theme-color" content="#173e30">
 <title>Hele slektstreet · Våre røtter</title>
 <style>
+[hidden]{display:none!important}
+
 :root{color-scheme:light;--forest:#173e30;--muted:#5f7569;--edge:#d7e5d9;--bg:#f3f7f0;--text:#20372b}
 *{box-sizing:border-box}
 body{margin:0;color:var(--text);background:var(--bg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -477,7 +479,7 @@ function nodeLabel(name){
  const lines=[];let line="";
  for(const w of words){
   const candidate=line?line+" "+w:w;
-  if(candidate.length>22&&line){lines.push(line);line=w}else line=candidate;
+  if(candidate.length>18&&line){lines.push(line);line=w}else line=candidate;
  }
  if(line)lines.push(line);
  const result=lines.slice(0,3);
@@ -1364,7 +1366,9 @@ async function startSharedTree(view,member=null){
  $("fullGenerationLimit").parentElement?.setAttribute("hidden","");
  mode="family";
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
- $("showMine").hidden=!mine;
+ $("showMine").hidden=!connectedSelf;
+ $("fullHome").hidden=!connectedSelf;
+ for(const button of document.querySelectorAll("#modeBar button"))if(button.dataset.mode==="family")button.textContent="Denne familiegrenen";
  $("adminPreviewLink").hidden=true;
  syncMode();render();setImmersive(true);
  $("branchTrailLine").textContent=data.audience==="guest"?"Gjestevisning · Klikk + for barn, − for å lukke. Nyere personer er anonyme.":"Medlemsvisning · Historiske personer og navn delt med familien. Øvrige personer er anonyme. Velg familiegren under Søk.";
