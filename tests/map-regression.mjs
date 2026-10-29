@@ -137,7 +137,7 @@ for(const role of ['administrator','medlem']){
  };
  await app.run('start()');app.flush();
  if(role==='administrator'){
-  assert.equal(app.run('people.get("me").name'),'Eksempelmedlem');
+  assert.equal(app.run('people.has("me")'),false,'preview does not invent isolated family member');
   for(const table of ['levende_profiler','familiegren_utkast','familiegren_historiske_koblinger','private_slekt_sidegrener'])assert.ok(!tables.includes(table),'preview must not query '+table);
  }else{
   assert.equal(app.run('memberPreview'),false,'URL cannot grant admin preview privileges');
@@ -163,3 +163,14 @@ const namedAdmin=load('slektskart.html');
 namedAdmin.run(`adminNames=true;rebuildGraph([],[],{navn:'Admin'},[],[],[{node_key:'relative',navn:'Source name',livsstatus:'ukjent',forelder1_key:'p:far'}],[],'account')`);
 assert.equal(namedAdmin.run('people.get("x:relative").name'),'Source name');
 console.log('PASS full view collapses; administrator sees source names');
+const mouse=load('slektskart.html');let captures=0;mouse.get('treePort').setPointerCapture=()=>captures++;
+const fire=(name,e)=>mouse.get('treePort').events[name].forEach(fn=>fn(e));
+fire('pointerdown',{pointerType:'mouse',button:0,clientX:10,clientY:10,pointerId:1});
+assert.equal(captures,0,'plain mouse click must reach card, no pointer capture');
+fire('pointermove',{pointerType:'mouse',buttons:1,clientX:12,clientY:11,pointerId:1});assert.equal(captures,0);
+fire('pointermove',{pointerType:'mouse',buttons:1,clientX:30,clientY:10,pointerId:1});assert.equal(captures,1,'drag captures only after movement threshold');
+const sides=load('slektskart.html');sides.run(`rebuildGraph([],[],{navn:'Test'},[],[],[],[],'test');focused=mine;resetBranchView(mine,true);render()`);
+assert.ok(sides.run('lastMapLayout.loc.get("p:morfar").x < lastMapLayout.loc.get("p:farmor").x'),'maternal grandparents stay left of paternal');
+sides.run(`generationLimit='all';addNode({id:'old',name:'Older',kind:'historical'});connect('old','p:mormor');resetBranchView(mine,true);render()`);
+assert.ok(sides.run('lastMapLayout.ids.has("old")'),'all generations affects progressive ancestry');
+console.log('PASS real mouse event handling, separate maternal/paternal layout, all generations');

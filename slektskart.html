@@ -220,7 +220,7 @@ header .brand-text p,header .brand-text small{display:block}
   </div>
 
 
-  <aside id="personalSidebar" aria-label="Søk i slektstreet" hidden><button id="personalSearchClose" type="button" class="secondary">Lukk søk ✕</button><div id="personalSearchBody"></div><p class="muted">Private opplysninger vises etter kontoens tilgang. Navnesøk bekrefter ikke slektskap.</p><a href="./familie.html#family">Registrer eller kontroller din familiegren</a></aside>
+  <aside id="personalSidebar" aria-label="Søk i slektstreet" hidden><button id="personalSearchClose" type="button" class="secondary">Lukk søk ✕</button><label for="branchStart">Velg familiegren</label><select id="branchStart" style="width:100%;padding:12px;margin:10px 0" aria-label="Velg startperson"></select><div id="personalSearchBody"></div><p class="muted">Private opplysninger vises etter kontoens tilgang. Navnesøk bekrefter ikke slektskap.</p><a href="./familie.html#family">Registrer eller kontroller din familiegren</a></aside>
   <aside id="branchPopup" class="hidden" aria-live="polite" aria-label="Utforsk valgt slektning">
    <div class="row space">
     <h3 id="popupPerson"></h3>
@@ -531,11 +531,14 @@ function resetBranchView(root,includeAncestors=false){
  progressiveEnabled=true;branchBase=new Set([root]);expandedPeople=new Set();
  if(includeAncestors){
   let layer=[root];
-  for(let depth=0;depth<2;depth++){
+  for(let depth=0;depth<(generationLimit==="all"?people.size:Number(generationLimit));depth++){
    layer=[...new Set(layer.flatMap(id=>getNeighbors(id,"ancestors")))];
+   layer=layer.filter(id=>!branchBase.has(id));
+   if(!layer.length)break;
    layer.forEach(id=>branchBase.add(id));
   }
  }
+ for(const id of branchBase){const kids=childIds(id);if(kids.length&&kids.every(k=>branchBase.has(k)))expandedPeople.add(id);}
 }
 function visibleBranchNodes(){
  const visible=new Set([...branchBase].filter(id=>people.has(id))),queue=[...visible];
@@ -560,7 +563,11 @@ function togglePersonBranch(id){
  selected=id;render(id);
 }
 function filterLayoutNodes(){
- if(progressiveEnabled){const ids=visibleBranchNodes();return {ids,split:false,sideMap:classifyBranches(ids),levels:layersFor(ids)};}
+ if(progressiveEnabled){
+  let ids=visibleBranchNodes();const sides=classifyBranches(ids),split=Boolean(mine&&focused===mine);
+  if(split&&branchSide!=="both")ids=new Set([...ids].filter(id=>[branchSide,"self","shared"].includes(sides.get(id))));
+  return {ids,split,sideMap:sides,levels:layersFor(ids)};
+ }
 
  const raw=familyMembers();
  const split=Boolean(mine&&focused===mine&&(mode==="family"||mode==="ancestors"));
@@ -1144,6 +1151,7 @@ $("fullBranchSide").addEventListener("change",e=>{
 });
 $("fullGenerationLimit").addEventListener("change",e=>{
  generationLimit=e.target.value;$("generationLimit").value=generationLimit;
+ if(progressiveEnabled&&mine&&focused===mine)resetBranchView(mine,true);
  render();requestAnimationFrame(()=>focusReadable(mine||focused));
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&immersive)setImmersive(false)});
@@ -1242,7 +1250,7 @@ $("branchSide").addEventListener("change",e=>{
  else render();
 });
 $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
-$("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
+$("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;if(progressiveEnabled&&mine&&focused===mine)resetBranchView(mine,true);render()});
 $("zoomIn").onclick=()=>setZoom(chart.scale*1.3);
 $("zoomOut").onclick=()=>setZoom(chart.scale/1.3);
 $("zoomFit").onclick=()=>setImmersive(!immersive);
@@ -1305,11 +1313,18 @@ port.addEventListener("wheel",e=>{
  const zoomFactor=Math.exp(-Math.max(-350,Math.min(350,delta))*0.0015);
  setZoom(chart.scale*zoomFactor,e.clientX-rect.left,e.clientY-rect.top);
 },{passive:false});
-port.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button===0){drag={x:e.clientX,y:e.clientY};port.setPointerCapture(e.pointerId)}});
+let mouseDragged=false;
+port.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button===0){mouseDragged=false;drag={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY};}});
 port.addEventListener("pointermove",e=>{
- if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
+ if(e.pointerType==="mouse"&&drag&&e.buttons===1){
+  if(!mouseDragged&&Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)<6)return;
+  if(!mouseDragged){mouseDragged=true;port.setPointerCapture(e.pointerId);}
+  port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={...drag,x:e.clientX,y:e.clientY};
+ }
 });
 port.addEventListener("pointerup",()=>{drag=null});
+port.addEventListener("pointercancel",()=>{drag=null;mouseDragged=false});
+port.addEventListener("click",event=>{if(mouseDragged){event.preventDefault();event.stopImmediatePropagation();mouseDragged=false;}},true);
 function preserveViewport(){
   cancelAnimationFrame(viewportFrame);
   viewportFrame=requestAnimationFrame(()=>{
@@ -1331,19 +1346,28 @@ async function startSharedTree(view,member=null){
  people=new Map();links=[];mine=null;
  for(const node of data.nodes||[]){addNode({...node,label:node.kind==="private"?"Delt med familien":""});if(node.is_self)mine=node.id;}
  for(const edge of data.edges||[])connect(edge.from,edge.to,edge.confidence);
- if(data.audience!=="guest"&&!mine){mine="me";addNode({id:mine,name:memberPreview?"Eksempelmedlem":member?.visningsnavn||"Deg",kind:"self"});}
- const parentNodes=new Set(links.map(e=>e.to));
- focused=mine||[...people.keys()].find(id=>!parentNodes.has(id)&&people.get(id).kind==="historical")||[...people.keys()][0];
- // Guests begin with documented root ancestors; children open one generation per click.
- resetBranchView(focused,Boolean(mine));
- if(!mine||!parentNodes.has(mine))for(const id of people.keys())if(!parentNodes.has(id)&&childIds(id).length)branchBase.add(id);
- if(!branchBase.size&&focused)branchBase.add(focused);
+ if(data.audience!=="guest"&&!mine&&!memberPreview){mine="me";addNode({id:mine,name:memberPreview?"Eksempelmedlem":member?.visningsnavn||"Deg",kind:"self"});}
+ const connectedSelf=mine&&getNeighbors(mine,"ancestors").length>0;
+ const candidates=[...people.values()].filter(n=>n.kind==="historical"&&childIds(n.id).length);
+ candidates.sort((a,b)=>{
+  const useful=n=>childIds(n.id).length>=2&&n.born>=1800?1:0;
+  return useful(b)-useful(a)||(b.born||0)-(a.born||0)||a.name.localeCompare(b.name,"nb");
+ });
+ focused=connectedSelf?mine:candidates[0]?.id||mine||[...people.keys()][0];
+ resetBranchView(focused,Boolean(connectedSelf));
+ if(!connectedSelf&&focused)expandedPeople.add(focused);
+ const picker=$("branchStart");picker.replaceChildren();
+ for(const n of [...candidates].sort((a,b)=>a.name.localeCompare(b.name,"nb"))){const option=document.createElement("option");option.value=n.id;option.textContent=n.name;picker.append(option);}
+ picker.value=focused;
+ picker.onchange=()=>{focused=picker.value;selected=focused;resetBranchView(focused);expandedPeople.add(focused);setPersonalSearch(false);render();};
+ $("fullBranchSide").parentElement?.setAttribute("hidden","");
+ $("fullGenerationLimit").parentElement?.setAttribute("hidden","");
  mode="family";
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
  $("showMine").hidden=!mine;
  $("adminPreviewLink").hidden=true;
  syncMode();render();setImmersive(true);
- $("branchTrailLine").textContent=data.audience==="guest"?"Gjestevisning · Klikk + for barn, − for å lukke. Nyere personer er anonyme.":"Medlemsvisning · Klikk på en person for å åpne eller lukke barna. Navn vises etter samtykke.";
+ $("branchTrailLine").textContent=data.audience==="guest"?"Gjestevisning · Klikk + for barn, − for å lukke. Nyere personer er anonyme.":"Medlemsvisning · Historiske personer og navn delt med familien. Øvrige personer er anonyme. Velg familiegren under Søk.";
 }
 
 let memberPreview=false;

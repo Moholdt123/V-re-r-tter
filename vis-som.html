@@ -9,7 +9,7 @@ const $=id=>document.getElementById(id);
 function selectMode(mode){
  const guest=mode==="guest";
  document.querySelectorAll("[data-mode]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.mode===mode)));
- $("description").textContent=guest?"Gjestevisning: historiske navn og anonyme nyere familieplasser. Klikk på personene for å åpne og lukke grener.":"Eksempel på godkjent medlem uten registrerte familieforbindelser. Dine private grener er utelatt. Dette tester visningen, ikke en annen kontos tilgangsregler.";
+ $("description").textContent=guest?"Gjestevisning: historiske navn og anonyme nyere familieplasser. Klikk på personene for å åpne og lukke grener.":"Medlemsvisning: historiske navn og navn som er delt med familien ved samtykke. Andre vises anonymt. Adminens private navn og notater er ikke med.";
  $("preview").src=guest?"./slektskart.html?preview=guest":"./slektskart.html?preview=member";
  $("preview").hidden=false;
 }
