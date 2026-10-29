@@ -108,24 +108,25 @@ header .brand-text p,header .brand-text small{display:block}
 <section class="card narrow" id="login">
   <div class="eyebrow">Familien · Innlogging</div>
   <h2>Historiene våre, samlet på ett sted.</h2>
-  <p class="muted">Her kan familiemedlemmer lese slektstreet, dele minner og legge inn bilder. Du trenger e-post og familiens invitasjonskode første gang.</p>
+  <p class="muted">Her kan familiemedlemmer lese slektstreet, dele minner og legge inn bilder. Logg inn med e-postlenke, uten passord. Første gang ber du om familietilgang. På din egen mobil huskes innloggingen.</p>
+  <button id="googleLogin" type="button" hidden style="width:100%;margin-bottom:18px">Fortsett med Google</button>
   <form id="emailForm">
     <label for="email">E-postadresse</label>
     <input id="email" type="email" placeholder="navn@epost.no" autocomplete="email" required>
     <button type="submit" style="margin-top:14px">Send meg innloggingslenke</button>
   </form>
   <p id="loginStatus" class="status" aria-live="polite"></p>
-  <div class="notice">Innloggingen beskytter slektsopplysningene på serveren. Den offentlige forsiden inneholder ikke slektsnavn. Familievisningen med kode viser bare historiske opplysninger. Del familiekoden privat.</div>
+  <div class="notice">Én konto for hele nettsiden. Nye medlemmer godkjennes av familieadministrator. Du velger selv om navnet ditt skal vises til familien. Logg ut når du bruker en delt enhet.</div>
 </section>
 <section class="card narrow hidden" id="join">
   <div class="eyebrow">Kun første gang</div><h2>Velkommen til familien!</h2>
   <p class="muted" id="joiningAs"></p>
-  <p>Skriv navnet ditt og familiens kode. Koden kontrolleres på serveren, ikke i denne nettsiden.</p>
+  <p>Skriv navnet ditt, så kan familieadministrator kjenne deg igjen og godkjenne tilgangen. Navnet kobler deg ikke automatisk til andre personer i treet.</p>
   <form id="joinForm">
     <label for="displayName">Navnet ditt</label><input id="displayName" maxlength="100" placeholder="Fornavn og etternavn" required>
-    <label for="familyCode">Familiekode</label><input id="familyCode" type="password" autocomplete="off" maxlength="40" placeholder="Koden fra familiegruppen" required>
-    <button type="submit" style="margin-top:14px">Bli med i familierommet</button>
+    <button type="submit" style="margin-top:14px">Be om familietilgang</button>
   </form>
+  <button id="checkAccess" type="button" class="secondary">Sjekk om jeg er godkjent</button>
   <p id="joinStatus" class="status" aria-live="polite"></p><button id="signOutJoin" class="secondary">Logg ut</button>
 </section>
 <section id="private" class="hidden">
@@ -186,7 +187,7 @@ header .brand-text p,header .brand-text small{display:block}
 
   <section class="card" id="shareLivingPanel" style="margin-bottom:18px;border:1px solid #c5ddc9;background:#f6faf6">
  <div class="eyebrow">Ditt valg · Privat inntil du samtykker</div>
- <h3>🌱 Skal andre i familien se at du lever?</h3>
+ <h3>🌱 Vil du være synlig i familiens tre?</h3>
  <p class="muted">Du bestemmer selv. Hvis du sier ja, vises <strong>kun navnet du velger og at du er nålevende</strong> for andre godkjente familiemedlemmer som logger inn personlig. Fødselsdato, e-postadresse og private familieopplysninger deles ikke. Familiekoden alene gir ikke innsyn.</p>
  <form id="shareLivingForm">
   <label for="shareLivingName">Navnet som kan vises til familien</label>
@@ -197,6 +198,7 @@ header .brand-text p,header .brand-text small{display:block}
   </label>
   <button id="shareLivingSave" type="submit" style="margin-top:12px">Lagre mitt valg</button>
  </form>
+ <a href="./slektskart.html" style="display:inline-block;padding:14px">Gå til mitt tre →</a>
  <p id="shareLivingStatus" class="status" role="status" aria-live="polite">Ikke delt. Du bestemmer selv om du vil bli synlig.</p>
  <p class="muted">Du kan skru av synligheten og lagre på nytt når som helst. Slektskapsforbindelser legges ikke automatisk til på grunnlag av navnet.</p>
 </section>
@@ -852,7 +854,18 @@ async function updateState(){
  profile=p;
  hide("login");
  if(p?.status==="sperret"){show("join");hide("private");hide("joinForm");$("joiningAs").textContent="Tilgangen er sperret. Kontakt familieadministrator.";return}
- if(p?.status!=="aktiv"){show("join");show("joinForm");hide("private");$("joiningAs").textContent="E-post bekreftet: "+(user.email||"");return}
+ if(p?.status!=="aktiv"){
+  show("join");hide("private");
+  if(p?.status==="venter"){hide("joinForm");$("joiningAs").textContent="Forespørselen din venter på godkjenning. Du trenger ikke registrere deg på nytt.";}
+  else{show("joinForm");$("joiningAs").textContent="Logget inn med "+(user.email||"");}
+  return;
+ }
+ if(!location.hash && new URLSearchParams(location.search).get("vis")!=="profil"){
+  const {data:choice,error:choiceError}=await db.from("familie_synlige_profiler").select("bruker_id").eq("bruker_id",user.id).maybeSingle();
+  if(choiceError){notice("loginStatus","Kunne ikke hente profilen. Prøv igjen.",true);show("login");return;}
+  if(choice){location.replace("./slektskart.html");return;}
+  location.hash="shareLivingPanel";
+ }
  hide("join");show("private");$("welcome").textContent="Logget inn som "+p.visningsnavn+" · Ditt private familiearkiv";
  if(p.rolle==="administrator")show("familyCodeAdmin");else hide("familyCodeAdmin");
  if(p.rolle==="administrator")show("administratorLink");else hide("administratorLink");
@@ -875,20 +888,45 @@ async function updateState(){
   $("grandparentCluePanel").scrollIntoView({behavior:"smooth",block:"start"});
  }
 }
+// Google is offered only when the project's public Auth settings enable it.
+async function configureGoogleLogin(){
+ try{
+  const response=await fetch(URL+"/auth/v1/settings",{headers:{apikey:PUBLIC_KEY}});
+  if(!response.ok)return;
+  const settings=await response.json();
+  $("googleLogin").hidden=settings.external?.google!==true;
+ }catch{/* Email remains available if settings cannot be loaded. */}
+}
+$("googleLogin").addEventListener("click",async()=>{
+ const button=$("googleLogin");button.disabled=true;
+ try{
+  const {error}=await db.auth.signInWithOAuth({provider:"google",options:{redirectTo:APP_URL}});
+  if(error)throw error;
+ }catch(error){notice("loginStatus","Kunne ikke åpne Google. Bruk e-postlenken eller prøv igjen.",true);button.disabled=false;}
+});
 $("emailForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const btn=e.target.querySelector("button");btn.disabled=true;notice("loginStatus","Sender e-post ...");
- const {error}=await db.auth.signInWithOtp({email:$("email").value.trim(),options:{emailRedirectTo:APP_URL,shouldCreateUser:true}});
- notice("loginStatus",error?"Kunne ikke sende: "+authErrorMessage(error):"Sjekk e-posten din og trykk på innloggingslenken. Åpne lenken på samme enhet.",Boolean(error));
- btn.disabled=false;
+ try{
+  const {error}=await db.auth.signInWithOtp({email:$("email").value.trim(),options:{emailRedirectTo:APP_URL,shouldCreateUser:true}});
+  if(error)throw error;
+  notice("loginStatus","Sjekk e-posten din og trykk på innloggingslenken. Se også i søppelpost. Bruk samme nettleser som du vil se treet i.");
+ }catch(error){notice("loginStatus","Kunne ikke sende: "+authErrorMessage(error),true);}
+ finally{btn.disabled=false;}
 });
 $("joinForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=e.target.querySelector("button");btn.disabled=true;
- notice("joinStatus","Sjekker invitasjonen ...");
- const {data,error}=await db.functions.invoke("familie-tilgang",{body:{code:$("familyCode").value,name:$("displayName").value}});
- if(error||!data?.ok){notice("joinStatus",data?.error||"Kunne ikke godkjenne koden. "+authErrorMessage(error||""),true);btn.disabled=false;return}
- $("familyCode").value="";btn.disabled=false;notice("joinStatus","Du har fått tilgang!");await updateState();
+ notice("joinStatus","Sender forespørselen ...");
+ try{
+  const {data,error}=await db.functions.invoke("familie-medlemsforesporsel",{body:{name:$("displayName").value.trim()}});
+  if(error||!data?.ok)throw error||new Error(data?.error||"Prøv igjen senere.");
+  notice("joinStatus","Forespørselen er sendt. Familieadministrator må godkjenne deg før du får tilgang.");
+  await updateState();
+ }catch(error){notice("joinStatus","Kunne ikke sende: "+authErrorMessage(error),true);}
+ finally{btn.disabled=false;}
 });
+$("checkAccess").addEventListener("click",()=>updateState().catch(error=>notice("joinStatus",authErrorMessage(error),true)));
+configureGoogleLogin();
 async function signOut(){await db.auth.signOut();chosen=null;await updateState()}
 $("signOut").addEventListener("click",signOut);$("signOutJoin").addEventListener("click",signOut);
 async function loadPrivate(){
