@@ -219,27 +219,45 @@ header .brand-text p,header .brand-text small{display:block}
  #treeWrap.immersive #fullScreenBar button{font-size:11px;padding:7px 9px}
 }
 
+
+#privateFamilyQuickLink{font-size:12px;color:var(--forest);background:#e9f4ea;border:1px solid #d1e5d4;border-radius:10px;padding:6px 9px;justify-content:space-between}
+#privateFamilyQuickLink span{font-weight:550}
+#privateFamilyQuickLink a{color:white;background:var(--forest);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;text-decoration:none}
+#privateFamilyQuickLink a:focus-visible{outline:3px solid #81b78d;outline-offset:2px}
+@media(max-width:760px){
+ #privateFamilyQuickLink{padding:6px 8px;gap:6px}
+ #privateFamilyQuickLink a{padding:7px 10px;font-size:11px}
+}
+
+
+#treeSidebar #anonymousBranchSection{flex:0 0 auto;margin:0;border-bottom:1px solid #d5e5d6;background:#fafcfa;padding:10px 12px;max-height:30vh;overflow-y:auto}
+#treeSidebar #anonymousBranchSection summary{font-size:12px;color:#345343;font-weight:750}
+#treeSidebar #anonymousBranchSection .muted{margin:6px 0;font-size:11px}
+#treeSidebar #anonymousBranchButtons{display:grid;gap:5px;padding:5px 0}
+#treeSidebar #anonymousBranchButtons button{font-size:12px;text-align:left;border:1px solid #c3cbd0;border-radius:8px;background:#edf0f2;color:#36434b;padding:9px}
+#treeSidebar #anonymousBranchButtons button:hover,#treeSidebar #anonymousBranchButtons button:focus-visible{background:#d9e3e8}
+
 </style>
 </head>
 <body>
-<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Familiekode · Historisk slektstre</p></span></a><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
+<header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Familiekode · Hele familiekartet</p></span></a><a href="./familie.html">🔐 Medlemsinnlogging</a></header>
 <main>
 <section class="card" id="loading" style="max-width:560px;margin:25px auto;padding:25px">
   <div style="font-size:45px;text-align:center">🌳</div>
   <h2 style="text-align:center">Velkommen til Våre røtter</h2>
-  <p class="muted" style="text-align:center">Familiens historiske slektstre. Skriv inn familiekoden du fikk av den som inviterte deg.</p>
+  <p class="muted" style="text-align:center">Hele slektstreet – med historiske navn og grå, navnløse grener. Skriv inn familiekoden du fikk av den som inviterte deg.</p>
   <form id="codeForm">
     <label for="familyCode" style="display:block;font-weight:700;margin-bottom:6px">Familiekode</label>
     <input id="familyCode" type="password" minlength="6" maxlength="25" placeholder="Skriv familiens kode" autocomplete="off" required style="width:100%;padding:13px;border:1px solid #acc6b3;border-radius:10px">
     <button type="submit" style="display:block;width:100%;padding:14px;margin-top:14px">🌳 Åpne slektstreet</button>
   </form>
-  <p class="muted" id="loadingMsg" aria-live="polite">Bare historiske slektsopplysninger vises med familiekoden.</p>
+  <p class="muted" id="loadingMsg" aria-live="polite">Familiekoden viser historiske navn og registrerte grå familieplasser uten private navn.</p>
   <p class="muted">Vil du legge inn historier eller redigere opplysninger? Da trenger du personlig innlogging via <a href="./familie.html">familierommet</a>.</p>
 </section>
 <section class="card hidden" id="visitorSetup" style="max-width:600px;margin:25px auto;padding:clamp(20px,4vw,34px)">
   <div style="font-size:38px;text-align:center" aria-hidden="true">🌱</div>
   <h2 style="text-align:center">Hvem utforsker slekta i dag?</h2>
-  <p class="muted" style="text-align:center">Familiekoden er godkjent. Skriv navnet ditt, så åpner det historiske slektskartet seg automatisk på hele skjermen.</p>
+  <p class="muted" style="text-align:center">Familiekoden er godkjent. Skriv navnet ditt, så åpner hele familiekartet seg i fullskjerm. Navn på ikke-navngitte familiemedlemmer vises som grå plasser.</p>
   <form id="visitorNameForm">
     <label for="visitorName" style="display:block;font-weight:750;margin:15px 0 7px">Ditt navn</label>
     <input id="visitorName" name="name" type="text" minlength="2" maxlength="90" autocomplete="name" placeholder="Fornavn og etternavn" required style="width:100%;padding:13px;border:1px solid #b6cdb9;border-radius:11px">
@@ -254,8 +272,8 @@ header .brand-text p,header .brand-text small{display:block}
  <section id="treeWelcome" aria-label="Velg hvordan du vil utforske">
   <h3 id="viewerWelcomeTitle">Velkommen til slektstreet!</h3>
   <p>Vil du se alt som er registrert, eller begynne hos en bestemt avdød slektning?</p>
-  <button id="openWholeMap" type="button">🌳 Åpne hele det historiske slektstreet
-   <span>Vis alle registrerte historiske personer. Dra rundt og zoom inn for å lese navnene.</span>
+  <button id="openWholeMap" type="button">🌳 Åpne hele slektstreet
+   <span>Vis registrerte historiske personer og grå navnløse familiegrener. Dra og zoom for å utforske.</span>
   </button>
   <p class="directHint">Kartet er stort. «Oversikt» viser hele kartet samlet; søk eller velg en person for et mer lesbart utsnitt.</p>
  </section>
@@ -272,7 +290,7 @@ header .brand-text p,header .brand-text small{display:block}
    </div>
  </section>
  <div class="row" style="justify-content:space-between;margin:10px 0">
-   <p class="muted" style="margin:0">Du ser bare historiske personer. Ingen private familiebånd utledes fra navnet du skrev.</p>
+   <p class="muted" style="margin:0">Historiske navn og anonymiserte slektsforbindelser vises. Navnet du skriver beviser ikke hvem du er i familien.</p>
    <button id="changeViewerName" type="button" class="secondary">Bytt navn</button>
  </div>
  <div class="searchline">
@@ -286,7 +304,7 @@ header .brand-text p,header .brand-text small{display:block}
  <aside id="privateSelfHint" aria-label="Finn ditt eget private slektstre">
   <div>
    <strong>🌱 Vil du finne deg selv?</strong>
-   <p>Familiepassordet viser kun historiske personer. Bruk personlig innlogging for din private familiegren.</p>
+   <p>Familiekoden viser historiske personer og anonyme familieplasser. For å se foreldrene dine med private navn må du bruke personlig innlogging.</p>
   </div>
   <a href="./familie.html">🔐 Personlig innlogging</a>
  </aside>
@@ -296,7 +314,7 @@ header .brand-text p,header .brand-text small{display:block}
    <button data-mode="family" aria-pressed="true">Slekt rundt person</button>
    <button data-mode="ancestors" aria-pressed="false">Forfedre</button>
    <button data-mode="descendants" aria-pressed="false">Etterkommere</button>
-   <button data-mode="archive" aria-pressed="false">Alle historiske</button>
+   <button data-mode="archive" aria-pressed="false">Hele slektstreet</button>
  </div>
 
  <div id="branchControls">
@@ -327,7 +345,7 @@ header .brand-text p,header .brand-text small{display:block}
 
  <div class="row" style="justify-content:space-between;margin-bottom:10px">
   <span id="treeCount" class="muted"></span>
-  <div class="legend"><span>🌳 Historisk slekt</span><span>– – Usikker kobling</span></div>
+  <div class="legend"><span>🌳 Historisk slekt</span><span>🌫️ Grå = navn skjult</span><span>– – Usikker kobling</span></div>
  </div>
  <div id="treeWrap">
 
@@ -339,6 +357,10 @@ header .brand-text p,header .brand-text small{display:block}
     <button id="fullOverview" type="button" class="secondary">Oversikt</button>
     <button id="fullSidebarToggle" type="button" class="secondary" aria-controls="treeSidebar" aria-expanded="true">☰ Skjul søk</button>
     <button id="fullClose" type="button">✕ Lukk</button>
+   </div>
+   <div class="fullRow" id="privateFamilyQuickLink">
+    <span>🌱 Vil du se mamma, pappa og <strong>din egen slekt</strong>?</span>
+    <a href="./slektskart.html">Åpne min familie med personlig innlogging</a>
    </div>
    <div id="branchTrailLine" role="status" aria-live="polite">Trykk på en person for å følge en familiegren</div>
    <div class="fullRow">
@@ -355,28 +377,33 @@ header .brand-text p,header .brand-text small{display:block}
    </div>
   </div>
 
-  <aside id="treeSidebar" aria-label="Søk og historisk personliste">
+  <aside id="treeSidebar" aria-label="Søk i historiske navn og skjulte familiegrener">
    <div class="side-intro">
     <div class="side-brand"><span aria-hidden="true">🌿</span> Ditt slektsarkiv
       <button id="sideClose" type="button" class="secondary" aria-label="Lukk søkepanel">✕</button>
     </div>
     <strong id="sidebarName">Velkommen!</strong>
-    <p>Velg en historisk slektning for å utforske en gren. Kartet til høyre viser hele arkivet ved oppstart.</p>
+    <p>Søk etter et historisk navn, eller åpne en grå familiegren for å følge registrerte barn og barnebarn.</p>
     <label for="sideSearch">Søk etter slektning</label>
     <input id="sideSearch" type="search" placeholder="Skriv navn …" autocomplete="off" aria-label="Søk blant historiske personer">
     <div id="sideCount" class="muted" aria-live="polite"></div>
     <button id="sideAll" type="button" class="secondary">🌳 Vis hele slektstreet</button>
    </div>
+   <details id="anonymousBranchSection" class="hidden">
+    <summary>🌫️ Skjulte familiegrener <span id="anonymousBranchCount"></span></summary>
+    <p class="muted">Her er registrerte grener uten private navn. Klikk for å se barna og barnebarna i kartet.</p>
+    <div id="anonymousBranchButtons"></div>
+   </details>
    <div class="side-list" role="region" aria-label="Historiske personer">
     <table class="side-table">
      <thead><tr><th scope="col">Navn</th><th scope="col">År</th></tr></thead>
      <tbody id="sidebarPeople"></tbody>
     </table>
-    <p id="sideNoResults" class="muted hidden">Ingen historiske treff. Levende familiemedlemmer er ikke med i dette søket.</p>
+    <p id="sideNoResults" class="muted hidden">Ingen historiske navnetreff. Bruk «Skjulte familiegrener» for grå plasser.</p>
    </div>
    <div class="side-foot">
     <strong>Vil du finne deg selv i slekta?</strong>
-    <p>Navnet du skrev er bare en velkomst. For å plassere deg riktig med foreldre og levende slektninger må du logge inn personlig.</p>
+    <p>Grå familieplasser viser kun registrerte forbindelser, aldri private navn. For å se dine egne foreldre ved navn trenger du personlig innlogging.</p>
     <a href="./familie.html">🔐 Personlig familieinnlogging</a>
     <button id="sideChangeName" type="button" class="secondary">Bytt navn</button>
    </div>
@@ -455,7 +482,12 @@ function connect(from,to,confidence,label){
 function rebuildGraph(history,ties){
  people=new Map();links=[];mine=null;
  for(const p of history)if(p&&p.id&&typeof p.navn==="string")
-  addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,gender:p.kjonn||null,kind:"historical",dbid:p.id});
+  addNode({id:"h:"+p.id,name:p.anonym===true?p.navn:p.navn,
+   born:p.anonym===true?null:p.fodt_ar,
+   died:p.anonym===true?null:p.dod_ar,
+   gender:p.anonym===true?null:p.kjonn||null,
+   kind:p.anonym===true?"anonymous":"historical",
+   dbid:p.anonym===true?null:p.id});
  for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
 }
 function getNeighbors(id,direction){
@@ -862,31 +894,32 @@ function render(){
   const side=sideMap.get(id);
   const g=svgEl("g",{transform:"translate("+p.x+" "+p.y+")",tabindex:0,role:"button","data-node":id,"aria-label":"Vis "+titleFor(n)});
   g.style.cursor="pointer";
-  const fill=id===focused?"#c7e8cc":side==="maternal"?"#dceef5":side==="paternal"?"#f7ead1":isPrivate(n)?"#e3f2e5":"white";
-  const stroke=id===selected?"#22533a":side==="maternal"?"#81b2c4":side==="paternal"?"#c5a46c":"#91b99b";
+  const fill=n.kind==="anonymous"?"#e1e4e7":id===focused?"#c7e8cc":side==="maternal"?"#dceef5":side==="paternal"?"#f7ead1":"white";
+  const stroke=n.kind==="anonymous"?"#7e8991":id===selected?"#22533a":side==="maternal"?"#81b2c4":side==="paternal"?"#c5a46c":"#91b99b";
   g.append(svgEl("rect",{x:0,y:0,width:nodeW,height:nodeH,rx:12,fill,stroke,"stroke-width":id===selected?3:1.5}));
   const nameLines=nodeLabel(n.name);
   for(let j=0;j<nameLines.length;j++){
    const t=svgEl("text",{x:nodeW/2,y:21+j*15,"text-anchor":"middle","font-family":"system-ui","font-weight":600,"font-size":nameLines.length>2?12:14,fill:"#173e30"});
    t.textContent=nameLines[j];g.append(t);
   }
-  const sub=n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
+  const sub=n.kind==="anonymous"?"🌫️ Klikk for familiegrenen":n.kind==="self"?"Deg · Privat":n.kind==="private"?(n.label+" · Privat"):[n.born||"?",n.died||"?"].join("–");
   const smaller=svgEl("text",{x:nodeW/2,y:nodeH-10,"text-anchor":"middle","font-family":"system-ui","font-size":11.5,fill:"#435d4a"});
   smaller.textContent=sub;g.append(smaller);
-  g.addEventListener("click",()=>choose(id,false));
-  g.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();choose(id,false)}});
+  const openNode=()=>n.kind==="anonymous"?exploreBranch(id,"family"):choose(id,false);
+  g.addEventListener("click",openNode);
+  g.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openNode()}});
   nodes.append(g);
  }
  svg.append(nodes);port.replaceChildren(svg);
  lastMapLayout=layout;
  chart={width,height,scale:1};autoFrame(loc,ids,nodeW,nodeH);highlightConnections();
  updateBranchControls();
- $("treeCount").textContent=ids.size+" av "+people.size+" registrerte personer · "+keys.length+" generasjonsnivåer";
- $("historicalFocusLabel").textContent=mode==="archive"?"Viser alle registrerte historiske personer.":(mode==="ancestors"?"Forfedre til ":mode==="descendants"?"Etterkommere av ":"Familien rundt ")+(people.get(focused)?.name||"valgt person")+". Endre person ved å søke etter et navn.";
+ $("treeCount").textContent=ids.size+" av "+people.size+" familieplasser og historiske personer · "+keys.length+" generasjonsnivåer";
+ $("historicalFocusLabel").textContent=mode==="archive"?"Viser hele familiearkivet med historiske navn og grå familieplasser.":(mode==="ancestors"?"Forfedre til ":mode==="descendants"?"Etterkommere av ":"Familien rundt ")+(people.get(focused)?.name||"valgt person")+". Endre person ved å søke etter et navn.";
  $("treeCount").title="Trykk Vis alt for å åpne det store slektstreet i fullskjerm. Dra og zoom for å utforske.";
  $("status").textContent=layout.ancestryTree?
-  "Historiske forfedre til valgt person. Foreldregrenene tegnes hver for seg der informasjonen er kjent. Stiplede linjer betyr usikker kobling.":
-  mode==="archive"?"Viser hele det historiske arkivet. Velg Forfedre eller søk etter en person for mer oversikt.":
+  "Registrerte familiegrener. Grå personer har skjulte navn, og kan åpnes for å se flere grener. Stiplede linjer betyr usikker kobling.":
+  mode==="archive"?"Hele det registrerte slektstreet. Grå bokser har skjulte navn – trykk for å åpne familiegrenen.":
   "Viser registrerte historiske slektslinjer rundt valgt person.";
 }
 
@@ -931,7 +964,10 @@ function descendantTitle(depth){
  return "Dette er en etterkommer "+depth+" generasjoner etter deg";
 }
 function relationshipToMe(id){
- const root=people.get(focused);if(!root||!people.has(id))return {title:"Historisk person",detail:""};
+ const root=people.get(focused),person=people.get(id);
+ if(!root||!person)return {title:"Registrert familieplass",detail:""};
+ if(person.kind==="anonymous")
+  return {title:"Navn skjult · registrert familieplass",detail:"Tilknytningen finnes i familiens registrerte opplysninger. Klikk på grenen for å se foreldre, barn og barnebarn som er registrert, uten private navn."};
  if(id===focused)return {title:"Valgt historisk person",detail:"Utforsk forfedre, barn og slektsgrener."};
  const up=ancestorPaths(focused,"up").get(id);
  if(up)return {title:"Registrert forfar/formor til "+root.name,detail:up.depth+" generasjoner bakover"+(up.links.some(x=>x.confidence==="usikker")?" · noen usikre koblinger":"")+".",trace:"Slektsveien: "+up.path.map(x=>people.get(x)?.name||"Ukjent").join(" → ")};
@@ -1109,7 +1145,7 @@ function choose(id,scrollToDetails=true){
  displayRelationship(id);
  showBranchPopup(id);
  $("descendPerson").disabled=childIds(id).length===0;
- $("selectedMeta").textContent=isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
+ $("selectedMeta").textContent=n.kind==="anonymous"?"🌫️ Navnet er skjult i familiekode-visningen. Denne grenen kan utforskes uten personopplysninger.":"Historisk profil · "+(n.born||"?")+"–"+(n.died||"?");
  $("focusPerson").onclick=()=>exploreBranch(id,"family");
  if(scrollToDetails&&!immersive)$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
@@ -1123,12 +1159,36 @@ function renderStartingPeople(){
  directory.replaceChildren();
  const placeholder=document.createElement("option");
  placeholder.value="";placeholder.textContent="Velg avdød slektning …";directory.append(placeholder);
- const sorted=[...people.values()].sort((a,b)=>a.name.localeCompare(b.name,"nb"));
+ const sorted=[...people.values()].filter(p=>p.kind==="historical").sort((a,b)=>a.name.localeCompare(b.name,"nb"));
  for(const p of sorted){
   const option=document.createElement("option");
   option.value=p.id;option.textContent=p.name+" ("+(p.born||"?")+"–"+(p.died||"?")+")";
   directory.append(option);
  }
+}
+function hasPersonalSessionHint(){
+ // Bare et hint om at denne nettleseren tidligere har logget inn. Ingen tilgang
+ // gis her: den personlige slektskart-siden må validere Auth og RLS selv.
+ try{
+  const raw=localStorage.getItem("sb-wtswwjancxiofkjmulvl-auth-token");
+  if(!raw)return false;
+  const session=JSON.parse(raw);
+  return typeof session?.access_token==="string"&&session.access_token.length>40&&
+    Number(session.expires_at)>Math.floor(Date.now()/1000)+30;
+ }catch{return false}
+}
+function historicalNameClue(name){
+ // Kun forslag blant avdøde; aldri automatisk identitet eller familieforbindelse.
+ const words=escapeSearch(name).split(/\s+/).filter(Boolean);
+ const surname=words[words.length-1];
+ if(!surname||surname.length<3)return null;
+ const hits=[...people.values()].filter(p=>p.kind==="historical"&&escapeSearch(p.name).split(/[\s\-]+/).includes(surname));
+ if(!hits.length)return null;
+ const score=p=>{
+  const up=links.filter(l=>l.to===p.id).length,down=links.filter(l=>l.from===p.id).length;
+  return (up?up*5:0)+Math.min(down,5)*2;
+ };
+ return hits.sort((a,b)=>score(b)-score(a)||a.name.localeCompare(b.name,"nb"))[0];
 }
 function showVisitorHome(){
  $("visitorSetup").classList.add("hidden");
@@ -1138,7 +1198,21 @@ function showVisitorHome(){
  $("sidebarName").textContent="Hei, "+visitorName+"! 🌱";
  $("sideSearch").value="";
  renderSidebarPeople();
+ // Har en besøker allerede innlogget konto på denne enheten, send videre til
+ // kartet som kontrollerer identiteten og viser kontoen sin familiegren.
+ if(hasPersonalSessionHint()){
+  location.assign("./slektskart.html");
+  return;
+ }
+ const hint=historicalNameClue(visitorName);
  openWholeHistoricalMap();
+ // Hele kartet beholdes. Et historisk navnetreff brukes bare til å plassere
+ // kartet lesbart, ikke til å hevde slektskap eller skjule andre grener.
+ if(hint)requestAnimationFrame(()=>{
+  focusReadable(hint.id);
+  $("branchTrailLine").textContent="Hele slektstreet · Viser et historisk navnetreff på "+hint.name+
+   ". Dette bekrefter ikke at personen er i din familiegren.";
+ });
 }
 $("visitorNameForm").addEventListener("submit",e=>{
  e.preventDefault();
@@ -1166,9 +1240,35 @@ function setSidebarOpen(open){
  // En rendring tilpasser kartets lesbarhet til tilgjengelig bredde.
  if(immersive&&people.size)requestAnimationFrame(()=>focusReadable(focused||selected||[...people.keys()][0]));
 }
+function renderAnonymousBranchList(){
+ const nodes=[...people.values()].filter(p=>p.kind==="anonymous");
+ const section=$("anonymousBranchSection"),container=$("anonymousBranchButtons");
+ container.replaceChildren();
+ section.classList.toggle("hidden",nodes.length===0);
+ $("anonymousBranchCount").textContent="("+nodes.length+")";
+ // Vis først grener som kommer direkte fra en navngitt historisk person.
+ const sorted=nodes.map(node=>{
+  const historical=links.find(l=>l.to===node.id&&people.get(l.from)?.kind==="historical");
+  const children=childIds(node.id).length;
+  return {node,parent:historical?people.get(historical.from):null,children};
+ }).sort((a,b)=>Number(Boolean(b.parent))-Number(Boolean(a.parent))||b.children-a.children||a.node.id.localeCompare(b.node.id));
+ for(const entry of sorted.slice(0,60)){
+  const button=document.createElement("button");button.type="button";
+  const label=entry.node.name;
+  button.textContent=entry.parent?
+    "🌫️ "+label+" · Gren etter "+entry.parent.name:
+    "🌫️ "+label+(entry.children?" · "+entry.children+" registrerte barn":"");
+  button.addEventListener("click",()=>{
+   if(!immersive)setImmersive(true);
+   exploreBranch(entry.node.id,"family");
+   if(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)setSidebarOpen(false);
+  });
+  container.append(button);
+ }
+}
 function renderSidebarPeople(){
  const q=escapeSearch($("sideSearch").value);
- const sorted=[...people.values()].filter(p=>escapeSearch(p.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"nb"));
+ const sorted=[...people.values()].filter(p=>p.kind==="historical"&&escapeSearch(p.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"nb"));
  const list=$("sidebarPeople");
  list.replaceChildren();
  const fragment=document.createDocumentFragment();
@@ -1188,7 +1288,7 @@ function renderSidebarPeople(){
   tr.append(name,year);fragment.append(tr);
  }
  list.append(fragment);
- $("sideCount").textContent=sorted.length+" av "+people.size+" historiske personer";
+ $("sideCount").textContent=sorted.length+" historiske personer · "+[...people.values()].filter(p=>p.kind==="anonymous").length+" grå familieplasser i kartet";
  $("sideNoResults").classList.toggle("hidden",sorted.length!==0);
 }
 $("sideSearch").addEventListener("input",renderSidebarPeople);
@@ -1198,9 +1298,9 @@ $("sideAll").addEventListener("click",()=>{openWholeHistoricalMap();if(window.ma
 $("sideChangeName").addEventListener("click",()=>$("changeViewerName").click());
 function setVisitorTreeLabel(person,whole=false){
  $("viewerTreeLabel").textContent=whole?
-  "🌳 Hele det historiske arkivet · Visning for "+visitorName:
-  "🌿 Historisk familiegren: "+person.name+" · Visning for "+visitorName+
-  ". Slektskapet mellom dere må være registrert og kontrollert separat.";
+  "🌳 Hele familiekartet · historiske personer og anonyme familieplasser · "+visitorName:
+  "🌿 Familiegren: "+person.name+" · Visning for "+visitorName+
+  ". Grå bokser viser registrerte slektninger uten navn. Slektskapet til deg må bekreftes separat.";
 }
 function openHistoricalPerson(id,view="ancestors"){
  if(!people.has(id))return;
@@ -1259,8 +1359,10 @@ $("openDirectoryPerson").addEventListener("click",()=>{
 });
 $("chooseAnother").addEventListener("click",returnToHistoricalChooser);
 function showMyParents(){
- if(visitorName&&people.size)openWholeHistoricalMap();
- else returnToHistoricalChooser();
+ if(!visitorName||!people.size){returnToHistoricalChooser();return;}
+ const hint=historicalNameClue(visitorName);
+ openWholeHistoricalMap();
+ if(hint)requestAnimationFrame(()=>focusReadable(hint.id));
 }
 $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
@@ -1278,7 +1380,7 @@ for(const b of document.querySelectorAll("#modeBar button"))b.addEventListener("
 $("search").addEventListener("input",()=>{
  const q=escapeSearch($("search").value),wrap=$("matches");wrap.replaceChildren();
  if(!q||q.length<2)return;
- const matches=[...people.values()].filter(p=>escapeSearch(p.name).includes(q))
+ const matches=[...people.values()].filter(p=>p.kind==="historical"&&escapeSearch(p.name).includes(q))
  .sort((a,b)=>(a.id===mine?-1:0)-(b.id===mine?-1:0)||a.name.localeCompare(b.name,"nb")).slice(0,12);
  for(const p of matches){
   const b=document.createElement("button");b.type="button";b.textContent=p.name;
@@ -1331,7 +1433,15 @@ port.addEventListener("pointermove",e=>{
  if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
 });
 port.addEventListener("pointerup",()=>{drag=null});
-window.addEventListener("resize",()=>{if(people.size)fit()});
+// Ved resize på mobil (nettleserlinje, tastatur eller skuff) må ikke et
+// stort historisk kart krympes helt ned til en prikk.
+window.addEventListener("resize",()=>{
+ if(!people.size||!$("app").classList.contains("hidden")===false)return;
+ requestAnimationFrame(()=>{
+  if(immersive)focusReadable(focused||selected||[...people.keys()][0]);
+  else if(lastMapLayout)focusReadable(focused||selected||[...people.keys()][0]);
+ });
+});
 async function displayTree(data){
  if(!Array.isArray(data.persons)||!Array.isArray(data.relationships))
   throw Error("Uventet svar fra historisk familiearkiv");
@@ -1342,6 +1452,7 @@ async function displayTree(data){
  visitorName="";$("visitorName").value="";
  renderStartingPeople();
  renderSidebarPeople();
+ renderAnonymousBranchList();
  returnToHistoricalChooser();
  $("visitorSetup").classList.remove("hidden");
 }
