@@ -869,6 +869,11 @@ async function updateState(){
  if(location.hash==="#family")$("privateBranchPanel").scrollIntoView({behavior:"smooth",block:"start"});
  if(location.hash==="#forskningsspor")$("researchPanel").scrollIntoView({behavior:"smooth",block:"start"});
  if(location.hash==="#shareLivingPanel")$("shareLivingPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ if(location.hash==="#parentLinkPanel")$("parentLinkPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ if(location.hash==="#grandparentCluePanel"){
+  $("grandparentCluePanel").open=true;
+  $("grandparentCluePanel").scrollIntoView({behavior:"smooth",block:"start"});
+ }
 }
 $("emailForm").addEventListener("submit",async e=>{
  e.preventDefault();
