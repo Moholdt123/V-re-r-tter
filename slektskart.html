@@ -132,6 +132,12 @@ header .brand-text p,header .brand-text small{display:block}
   <button id="startAtSigurd" type="button">🏰 Start hos Sigurd Bonde</button>
   <span class="muted" style="font-size:12px">Bokas anerekke – stiplede linjer markerer forbindelser som ikke er bekreftet.</span>
  </div>
+ <section id="optInLivingSection" style="margin:9px 0 16px;background:#f1f8f0;border:1px solid #c5dfc8;border-radius:13px;padding:13px 15px">
+  <strong>🌱 Nålevende familiemedlemmer som selv har valgt å vises</strong>
+  <p class="muted" style="margin:5px 0 9px">Disse navnene er synlige bare for godkjente familiemedlemmer. Klikk et navn for å se personen i kartet. Slektsskapslinjer vises først når de er registrert og bekreftet.</p>
+  <div id="optInLivingList" style="display:flex;flex-wrap:wrap;gap:8px" aria-live="polite"></div>
+  <a href="./familie.html#shareLivingPanel" style="display:inline-block;font-size:12px;margin-top:10px;color:var(--forest);font-weight:700">Endre om du selv vil vises</a>
+ </section>
  <div class="searchline">
    <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
    <button id="showMine" type="button">🌱 Finn meg</button>
@@ -260,10 +266,15 @@ function connect(from,to,confidence,label){
  if(links.some(l=>l.from===from&&l.to===to))return;
  links.push({from,to,confidence:confidence||"familieopplysning",label:label||"forelder_barn"});
 }
-function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[]){
+function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],sharedVisible=[],accountId=null){
   people=new Map();links=[];mine=null;
   for(const p of history)addNode({id:"h:"+p.id,name:p.navn,born:p.fodt_ar,died:p.dod_ar,gender:p.kjonn||null,kind:"historical",dbid:p.id});
   for(const r of ties)if(r.type==="forelder_barn")connect("h:"+r.fra_person,"h:"+r.til_person,r.sikkerhet);
+  // Synlige levende medlemmer vises uten automatisk konstruerte slektskapslenker.
+  for(const person of sharedVisible){
+   if(!person.bruker_id||!person.navn||person.bruker_id===accountId&&self)continue;
+   addNode({id:"v:"+person.bruker_id,name:person.navn,kind:"optin",label:"Nålevende · frivillig synlig"});
+  }
   if(!self)return;
   mine="me";
   addNode({id:mine,name:self.navn,born:self.fodt_dato?Number(self.fodt_dato.slice(0,4)):null,kind:"self"});
@@ -996,14 +1007,33 @@ function choose(id,scrollToDetails=true){
  displayRelationship(id);
  showBranchPopup(id);
  $("descendPerson").disabled=childIds(id).length===0;
- $("selectedMeta").textContent=isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
- $("openProfile").textContent=isPrivate(n)?"Åpne mitt private familieutkast":"Åpne personprofil";
+ $("selectedMeta").textContent=n.kind==="optin"?"Nålevende · Vises frivillig for godkjent familie. Ingen private opplysninger deles.":isPrivate(n)?"Kun i din private familiegren.":("Historisk profil · "+(n.born||"?")+"–"+(n.died||"?"));
+ $("openProfile").disabled=n.kind==="optin";
+ $("openProfile").textContent=n.kind==="optin"?"Privat profil er ikke delt":isPrivate(n)?"Åpne mitt private familieutkast":"Åpne personprofil";
  $("openProfile").onclick=()=>{
+  if(n.kind==="optin")return;
   if(isPrivate(n))location.href="./familie.html#family";
   else location.href="./familie.html#person="+encodeURIComponent(n.dbid);
  };
  $("focusPerson").onclick=()=>exploreBranch(id,"family");
  if(scrollToDetails&&!immersive)$("selected").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function renderOptInMembers(members){
+ const target=$("optInLivingList");target.replaceChildren();
+ if(!members.length){
+  const empty=document.createElement("span");empty.className="muted";
+  empty.textContent="Ingen har valgt å bli synlige ennå.";target.append(empty);return;
+ }
+ for(const member of members){
+  const item=document.createElement("button");item.type="button";
+  item.className="secondary";item.style.fontSize="13px";
+  item.textContent="🌱 "+member.navn+" · Nålevende";
+  item.addEventListener("click",()=>{
+   const id=member.bruker_id===account?.id&&mine?mine:"v:"+member.bruker_id;
+   if(people.has(id))exploreBranch(id,"family");
+  });
+  target.append(item);
+ }
 }
 function portTreeNode(id){return people.has(id)}
 function showMyParents(){
@@ -1097,14 +1127,15 @@ async function start(){
   $("loadingMsg").textContent="Du må være et aktivt familiemedlem for å bruke slektskartet.";
   return;
  }
- const [h,t,s,r,b]=await Promise.all([
+ const [h,t,s,r,b,v]=await Promise.all([
   db.from("personer").select("id,navn,fodt_ar,dod_ar,kjonn").order("navn"),
   db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet"),
   db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",account.id).maybeSingle(),
   db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",account.id),
-  db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id)
+  db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id),
+  db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn")
  ]);
- const err=h.error||t.error||s.error||r.error||b.error;
+ const err=h.error||t.error||s.error||r.error||b.error||v.error;
  if(err){$("loadingMsg").textContent="Kunne ikke laste slektsdata. "+err.message;return}
  let sideBranches=[];
  if(member.rolle==="administrator"){
@@ -1114,7 +1145,8 @@ async function start(){
   if(privateError){$("loadingMsg").textContent="Kunne ikke hente privat slektsgren: "+privateError.message;return;}
   sideBranches=privateData||[];
  }
- rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[],sideBranches);
+ rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[],sideBranches,v.data||[],account.id);
+ renderOptInMembers(v.data||[]);
  if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}
  focused=mine||[...people.keys()][0];
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
