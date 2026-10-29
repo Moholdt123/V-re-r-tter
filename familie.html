@@ -214,13 +214,31 @@ header .brand-text p,header .brand-text small{display:block}
    <div><label for="parentRole">Hvem er det?</label><select id="parentRole" required><option value="mor">Min mor</option><option value="far">Min far</option></select></div>
    <div><label for="parentCandidate">Finn registrert forelder</label><select id="parentCandidate"><option value="">Ikke registrert / velg her …</option></select></div>
   </div>
-  <label for="parentFullName">Forelderens navn</label>
-  <input id="parentFullName" type="text" autocomplete="off" maxlength="150" minlength="2" placeholder="For eksempel Kari Hansen" required>
-  <p class="muted" style="margin:6px 0 12px">Hvis du velger en person i listen, fylles navnet inn. Finner du ikke personen, skriver du navnet selv. Det blir et privat forslag, ikke en automatisk offentlig kobling.</p>
+  <label for="parentFullName">Skriv navnet på mor eller far</label>
+  <input id="parentFullName" type="text" autocomplete="off" maxlength="150" minlength="2" placeholder="Skriv det du vet – vi leter i familien" required>
+  <div id="parentMatchStatus" class="muted" aria-live="polite" style="margin:8px 0"></div>
+  <div id="parentMatchSuggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0"></div>
+  <p id="parentAncestorPreview" class="muted" aria-live="polite" style="margin:8px 0"></p>
+  <p class="muted" style="margin:6px 0 12px">Du kan skrive navnet i stedet for å bla i listen. Finner vi ett entydig treff, foreslår nettsiden det automatisk. Koblingen må fortsatt kontrolleres før den deles.</p>
   <button type="submit" id="parentLinkSend">🌿 Send inn familieforbindelsen</button>
  </form>
  <p id="parentLinkStatus" class="status" role="status" aria-live="polite"></p>
  <div id="myParentRequests" style="display:grid;gap:9px;margin:9px 0" aria-live="polite"></div>
+ <details style="border-top:1px solid #dae7dc;margin-top:17px;padding-top:16px" id="grandparentCluePanel">
+  <summary style="font-weight:750;cursor:pointer">🌿 Vet du bare hvem bestemor eller bestefar er?</summary>
+  <p class="muted">Det er også nok til å foreslå en familiegren! Skriv én besteforelder du kjenner. Vi søker i de registrerte, historiske eller frivillig synlige personene. Hvis mellomleddet – mor eller far – mangler, kan kartet vise det som en <strong>grå, uavklart foreldregren</strong> etter kontroll. Vi gjetter ikke hvem forelderen er.</p>
+  <form id="grandparentClueForm">
+   <label for="grandparentFullName">Navnet på bestemor eller bestefar</label>
+   <input id="grandparentFullName" type="text" autocomplete="off" maxlength="150" minlength="2" placeholder="Navnet du kjenner" required>
+   <div id="grandparentMatchStatus" class="muted" aria-live="polite" style="margin:8px 0"></div>
+   <div id="grandparentMatchSuggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0"></div>
+   <label for="grandparentCandidate">Registrert person (valgfritt – nettsiden foreslår ved treff)</label>
+   <select id="grandparentCandidate"><option value="">Jeg finner ikke personen i arkivet</option></select>
+   <button id="grandparentClueSend" type="submit" style="margin-top:12px">🌳 Send inn besteforeldersporet</button>
+  </form>
+  <p id="grandparentClueStatus" class="status" role="status" aria-live="polite"></p>
+  <div id="myGrandparentRequests" style="display:grid;gap:8px;margin-top:12px" aria-live="polite"></div>
+ </details>
 </section>
 <section class="card" id="privateBranchPanel" style="margin-bottom:18px">
     <div class="eyebrow">Personlig og privat · Familieopplysninger til kontroll</div>
@@ -410,21 +428,97 @@ $("shareLivingForm").addEventListener("submit",async event=>{
 // Medlemmet foreslår forelder; administrator bekrefter slektskapet før det deles.
 let myParentRequests=[];
 let parentCandidates=new Map();
+let candidateOlderParents=new Map();
+let parentHistoricalLinks=[];
+let parentApprovedLinks=[];
+function nameKey(value){return String(value||"").normalize("NFKC").trim().replace(/\s+/g," ").toLocaleLowerCase("nb");}
+function matchingCandidateIds(name){
+ const key=nameKey(name);
+ if(key.length<2)return [];
+ return [...parentCandidates].filter(([id,label])=>nameKey(label)===key).map(([id])=>id);
+}
+function parentOfCandidate(id){
+ if(id.startsWith("h:"))
+  return parentHistoricalLinks.filter(x=>x.type==="forelder_barn"&&x.til_person===id.slice(2))
+   .map(x=>"h:"+x.fra_person).filter(x=>parentCandidates.has(x));
+ if(id.startsWith("v:"))
+  return parentApprovedLinks.filter(x=>x.barn_bruker_id===id.slice(2))
+   .map(x=>x.historisk_person_id?"h:"+x.historisk_person_id:x.forelder_bruker_id?"v:"+x.forelder_bruker_id:null)
+   .filter(x=>x&&parentCandidates.has(x));
+ return [];
+}
+function previewFamilyAncestors(id){
+ if(!id||!parentCandidates.has(id))return "";
+ const visited=new Set([id]),found=[];
+ let frontier=[id];
+ for(let depth=0;depth<2;depth++){
+  const next=[];
+  for(const personId of frontier)for(const parentId of parentOfCandidate(personId)){
+   if(visited.has(parentId))continue;
+   visited.add(parentId);
+   next.push(parentId);
+   found.push(parentCandidates.get(parentId));
+  }
+  frontier=next;
+ }
+ return found.length?"Arkivet har også eldre koblinger videre fra dette navnet: "+found.slice(0,6).join(", ")+". Disse må vurderes opp mot kildene.":"Ingen eldre foreldre er sikkert knyttet til denne personen i den tilgjengelige oversikten.";
+}
+function setSelectedCandidate(inputId,selectId,statusId,suggestionId,id){
+ const select=$(selectId);select.value=id;
+ $(inputId).value=parentCandidates.get(id);
+ $(statusId).textContent="🌿 Mulig treff i slektstreet: "+parentCandidates.get(id)+". Dette er ikke et bekreftet slektskap før det er kontrollert.";
+ $(suggestionId).replaceChildren();
+ if(inputId==="parentFullName")$("parentAncestorPreview").textContent=previewFamilyAncestors(id);
+}
+function autoSuggestRelative(inputId,selectId,statusId,suggestionId){
+ const name=$(inputId).value, key=nameKey(name),matches=matchingCandidateIds(name);
+ const select=$(selectId),suggestions=$(suggestionId),status=$(statusId);
+ suggestions.replaceChildren();select.value="";
+ if(inputId==="parentFullName")$("parentAncestorPreview").textContent="";
+ if(key.length<2){status.textContent="";return;}
+ if(matches.length===1){
+  setSelectedCandidate(inputId,selectId,statusId,suggestionId,matches[0]);
+  return;
+ }
+ if(matches.length>1){
+  status.textContent="Flere registrerte personer har dette navnet. Velg riktig treff – vi velger ikke for deg.";
+ }else{
+  status.textContent="Vi fant ikke et entydig treff på hele navnet. Du kan likevel sende inn sporet, eller velge et av forslagene.";
+ }
+ if(key.length<3)return;
+ const options=[...parentCandidates.entries()].filter(([id,value])=>nameKey(value).includes(key)).slice(0,5);
+ for(const [id,value] of options){
+  const b=document.createElement("button");b.type="button";b.className="secondary";b.style.fontSize="12px";
+  b.textContent="🌿 "+value;
+  b.addEventListener("click",()=>setSelectedCandidate(inputId,selectId,statusId,suggestionId,id));
+  suggestions.append(b);
+ }
+}
+
 async function loadParentCandidates(){
  if(!user||profile?.status!=="aktiv")return;
- const [living,historical]=await Promise.all([
+ const [living,historical,historicLinks,approvedLinks]=await Promise.all([
   db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn"),
-  db.from("personer").select("id,navn,fodt_ar,dod_ar").eq("lever",false).order("navn")
+  db.from("personer").select("id,navn,fodt_ar,dod_ar").eq("lever",false).order("navn"),
+  db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet").eq("type","forelder_barn"),
+  db.from("familie_foreldrekoblinger").select("barn_bruker_id,forelder_bruker_id,historisk_person_id").eq("status","godkjent")
  ]);
- const select=$("parentCandidate");select.replaceChildren();
- const option=document.createElement("option");option.value="";
- option.textContent="Ikke registrert / skriv navnet …";select.append(option);
- if(living.error||historical.error){
+ const select=$("parentCandidate"),grand=$("grandparentCandidate");
+ select.replaceChildren();grand.replaceChildren();
+ for(const menu of [select,grand]){
+  const option=document.createElement("option");option.value="";
+  option.textContent="Ikke registrert / skriv navnet …";menu.append(option);
+ }
+ if(living.error||historical.error||historicLinks.error||approvedLinks.error){
   notice("parentLinkStatus","Kunne ikke hente navn fra slektstreet. Du kan likevel skrive inn forelderens navn.",true);return;
  }
  parentCandidates=new Map();
+ parentHistoricalLinks=historicLinks.data||[];
+ parentApprovedLinks=approvedLinks.data||[];
  const push=(id,name,label)=>{
-  const op=document.createElement("option");op.value=id;op.textContent=label;select.append(op);
+  for(const menu of [select,grand]){
+   const op=document.createElement("option");op.value=id;op.textContent=label;menu.append(op);
+  }
   parentCandidates.set(id,name);
  };
  for(const p of living.data||[]){
@@ -436,12 +530,15 @@ async function loadParentCandidates(){
 }
 $("parentCandidate").addEventListener("change",()=>{
  const id=$("parentCandidate").value;
- if(id&&parentCandidates.has(id))$("parentFullName").value=parentCandidates.get(id);
+ if(id&&parentCandidates.has(id))setSelectedCandidate("parentFullName","parentCandidate","parentMatchStatus","parentMatchSuggestions",id);
 });
-$("parentFullName").addEventListener("input",()=>{
- const id=$("parentCandidate").value;
- if(id&&$("parentFullName").value.trim()!==parentCandidates.get(id))$("parentCandidate").value="";
+$("grandparentCandidate").addEventListener("change",()=>{
+ const id=$("grandparentCandidate").value;
+ if(id&&parentCandidates.has(id))setSelectedCandidate("grandparentFullName","grandparentCandidate","grandparentMatchStatus","grandparentMatchSuggestions",id);
 });
+$("parentFullName").addEventListener("input",()=>autoSuggestRelative("parentFullName","parentCandidate","parentMatchStatus","parentMatchSuggestions"));
+$("grandparentFullName").addEventListener("input",()=>autoSuggestRelative("grandparentFullName","grandparentCandidate","grandparentMatchStatus","grandparentMatchSuggestions"));
+
 async function loadMyParentRequests(){
  if(!user||profile?.status!=="aktiv")return;
  const {data,error}=await db.from("familie_foreldrekoblinger")
@@ -503,9 +600,64 @@ $("parentLinkForm").addEventListener("submit",async event=>{
  else{
   notice("parentLinkStatus","Forslaget er sendt til administrator. Ingen slektskobling vises før godkjenning.");
   $("parentCandidate").value="";$("parentFullName").value="";
+  $("parentMatchStatus").textContent="";$("parentAncestorPreview").textContent="";
+  $("parentMatchSuggestions").replaceChildren();
   await loadMyParentRequests();
  }
  btn.disabled=false;
+});
+// Når et familiemedlem bare kjenner en besteforelder, kan grenen foreslås
+// uten å gjette hvem det ukjente mellomliggende foreldreleddet er.
+async function loadMyGrandparentRequests(){
+ if(!user||profile?.status!=="aktiv")return;
+ const {data,error}=await db.from("familie_besteforelderforslag")
+  .select("id,besteforelder_navn,status").eq("barn_bruker_id",user.id).order("opprettet",{ascending:false});
+ const target=$("myGrandparentRequests");target.replaceChildren();
+ if(error){notice("grandparentClueStatus","Kunne ikke laste besteforelderspor: "+authErrorMessage(error),true);return;}
+ if(!(data||[]).length){target.append(text("p","Ingen besteforelderspor sendt inn ennå.","muted"));return;}
+ for(const row of data){
+  const item=document.createElement("div");item.style.cssText="padding:10px 12px;background:#f7faf6;border:1px solid #dae8db;border-radius:10px";
+  const status=row.status==="venter"?"Til kontroll":row.status==="godkjent"?"Godkjent, uavklart foreldreledd":"Avvist";
+  item.append(text("strong",row.besteforelder_navn),text("p",status,"muted"));
+  const remove=document.createElement("button");remove.type="button";remove.className="secondary";remove.style.fontSize="12px";
+  remove.textContent="Trekk tilbake";
+  remove.addEventListener("click",async()=>{
+   remove.disabled=true;
+   const {error:e}=await db.from("familie_besteforelderforslag").delete().eq("id",row.id).eq("barn_bruker_id",user.id);
+   if(e)notice("grandparentClueStatus","Kunne ikke trekke tilbake: "+authErrorMessage(e),true);
+   else{notice("grandparentClueStatus","Sporet er trukket tilbake.");await loadMyGrandparentRequests();}
+   remove.disabled=false;
+  });
+  item.append(remove);target.append(item);
+ }
+}
+$("grandparentClueForm").addEventListener("submit",async event=>{
+ event.preventDefault();if(!user||profile?.status!=="aktiv")return;
+ const button=$("grandparentClueSend");button.disabled=true;
+ const own=await db.from("familie_synlige_profiler").select("synlig_for_familien")
+  .eq("bruker_id",user.id).maybeSingle();
+ if(own.error||own.data?.synlig_for_familien!==true){
+  notice("grandparentClueStatus","Velg først at du vil vises for familien, og lagre valget over.",true);
+  button.disabled=false;return;
+ }
+ const name=$("grandparentFullName").value.trim().replace(/\s+/g," ");
+ const id=$("grandparentCandidate").value;
+ if(name.length<2||name.length>150){notice("grandparentClueStatus","Skriv navnet på besteforelderen.",true);button.disabled=false;return;}
+ const row={
+  barn_bruker_id:user.id,besteforelder_navn:name,
+  historisk_person_id:id.startsWith("h:")?id.slice(2):null,
+  besteforelder_bruker_id:id.startsWith("v:")?id.slice(2):null,
+  status:"venter"
+ };
+ const {error}=await db.from("familie_besteforelderforslag").insert(row);
+ if(error)notice("grandparentClueStatus","Kunne ikke sende sporet: "+authErrorMessage(error),true);
+ else{
+  notice("grandparentClueStatus","Vi har funnet en mulig familiegren. Administrator må bekrefte besteforelderen før forbindelsen vises.");
+  $("grandparentFullName").value="";$("grandparentCandidate").value="";
+  $("grandparentMatchStatus").textContent="";$("grandparentMatchSuggestions").replaceChildren();
+  await loadMyGrandparentRequests();
+ }
+ button.disabled=false;
 });
 const privateFamilySlots=[
   ["mormor","Mormor"],["morfar","Morfar"],
@@ -709,6 +861,7 @@ async function updateState(){
  await loadVisibleRelatives();
  await loadParentCandidates();
  await loadMyParentRequests();
+ await loadMyGrandparentRequests();
  await loadOwnFamilyBranch();
  await loadOwnHistoricalBridges();
  await loadResearchLeads();
