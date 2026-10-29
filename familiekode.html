@@ -219,6 +219,16 @@ header .brand-text p,header .brand-text small{display:block}
  #treeWrap.immersive #fullScreenBar button{font-size:11px;padding:7px 9px}
 }
 
+
+#privateFamilyQuickLink{font-size:12px;color:var(--forest);background:#e9f4ea;border:1px solid #d1e5d4;border-radius:10px;padding:6px 9px;justify-content:space-between}
+#privateFamilyQuickLink span{font-weight:550}
+#privateFamilyQuickLink a{color:white;background:var(--forest);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;text-decoration:none}
+#privateFamilyQuickLink a:focus-visible{outline:3px solid #81b78d;outline-offset:2px}
+@media(max-width:760px){
+ #privateFamilyQuickLink{padding:6px 8px;gap:6px}
+ #privateFamilyQuickLink a{padding:7px 10px;font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -339,6 +349,10 @@ header .brand-text p,header .brand-text small{display:block}
     <button id="fullOverview" type="button" class="secondary">Oversikt</button>
     <button id="fullSidebarToggle" type="button" class="secondary" aria-controls="treeSidebar" aria-expanded="true">☰ Skjul søk</button>
     <button id="fullClose" type="button">✕ Lukk</button>
+   </div>
+   <div class="fullRow" id="privateFamilyQuickLink">
+    <span>🌱 Vil du se mamma, pappa og <strong>din egen slekt</strong>?</span>
+    <a href="./slektskart.html">Åpne min familie med personlig innlogging</a>
    </div>
    <div id="branchTrailLine" role="status" aria-live="polite">Trykk på en person for å følge en familiegren</div>
    <div class="fullRow">
@@ -1130,6 +1144,30 @@ function renderStartingPeople(){
   directory.append(option);
  }
 }
+function hasPersonalSessionHint(){
+ // Bare et hint om at denne nettleseren tidligere har logget inn. Ingen tilgang
+ // gis her: den personlige slektskart-siden må validere Auth og RLS selv.
+ try{
+  const raw=localStorage.getItem("sb-wtswwjancxiofkjmulvl-auth-token");
+  if(!raw)return false;
+  const session=JSON.parse(raw);
+  return typeof session?.access_token==="string"&&session.access_token.length>40&&
+    Number(session.expires_at)>Math.floor(Date.now()/1000)+30;
+ }catch{return false}
+}
+function historicalNameClue(name){
+ // Kun forslag blant avdøde; aldri automatisk identitet eller familieforbindelse.
+ const words=escapeSearch(name).split(/\s+/).filter(Boolean);
+ const surname=words[words.length-1];
+ if(!surname||surname.length<3)return null;
+ const hits=[...people.values()].filter(p=>escapeSearch(p.name).split(/[\s\-]+/).includes(surname));
+ if(!hits.length)return null;
+ const score=p=>{
+  const up=links.filter(l=>l.to===p.id).length,down=links.filter(l=>l.from===p.id).length;
+  return (up?up*5:0)+Math.min(down,5)*2;
+ };
+ return hits.sort((a,b)=>score(b)-score(a)||a.name.localeCompare(b.name,"nb"))[0];
+}
 function showVisitorHome(){
  $("visitorSetup").classList.add("hidden");
  $("app").classList.remove("hidden");
@@ -1138,7 +1176,21 @@ function showVisitorHome(){
  $("sidebarName").textContent="Hei, "+visitorName+"! 🌱";
  $("sideSearch").value="";
  renderSidebarPeople();
- openWholeHistoricalMap();
+ // Har en besøker allerede innlogget konto på denne enheten, send videre til
+ // kartet som kontrollerer identiteten og viser kontoen sin familiegren.
+ if(hasPersonalSessionHint()){
+  location.assign("./slektskart.html");
+  return;
+ }
+ const hint=historicalNameClue(visitorName);
+ if(hint){
+  openHistoricalPerson(hint.id,"family");
+  setImmersive(true);
+  $("branchTrailLine").textContent="Historisk navnespor: "+hint.name+
+   ". Samme etternavn beviser ikke at dere er i slekt. Logg inn personlig for å se foreldrene dine.";
+ }else{
+  openWholeHistoricalMap();
+ }
 }
 $("visitorNameForm").addEventListener("submit",e=>{
  e.preventDefault();
@@ -1259,8 +1311,14 @@ $("openDirectoryPerson").addEventListener("click",()=>{
 });
 $("chooseAnother").addEventListener("click",returnToHistoricalChooser);
 function showMyParents(){
- if(visitorName&&people.size)openWholeHistoricalMap();
- else returnToHistoricalChooser();
+ if(!visitorName||!people.size){returnToHistoricalChooser();return;}
+ const hint=historicalNameClue(visitorName);
+ if(hint){
+  openHistoricalPerson(hint.id,"family");
+  if(!immersive)setImmersive(true);
+  $("branchTrailLine").textContent="Historisk navnespor: "+hint.name+
+   ". Slektskapet til deg er ikke bekreftet.";
+ }else openWholeHistoricalMap();
 }
 $("mapSpacing").addEventListener("change",e=>{mapSpacing=e.target.value;render()});
 $("generationLimit").addEventListener("change",e=>{generationLimit=e.target.value;render()});
@@ -1331,7 +1389,15 @@ port.addEventListener("pointermove",e=>{
  if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
 });
 port.addEventListener("pointerup",()=>{drag=null});
-window.addEventListener("resize",()=>{if(people.size)fit()});
+// Ved resize på mobil (nettleserlinje, tastatur eller skuff) må ikke et
+// stort historisk kart krympes helt ned til en prikk.
+window.addEventListener("resize",()=>{
+ if(!people.size||!$("app").classList.contains("hidden")===false)return;
+ requestAnimationFrame(()=>{
+  if(immersive)focusReadable(focused||selected||[...people.keys()][0]);
+  else if(lastMapLayout)focusReadable(focused||selected||[...people.keys()][0]);
+ });
+});
 async function displayTree(data){
  if(!Array.isArray(data.persons)||!Array.isArray(data.relationships))
   throw Error("Uventet svar fra historisk familiearkiv");
