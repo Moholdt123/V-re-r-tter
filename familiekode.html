@@ -34,7 +34,7 @@ input[type=search]{width:100%;min-width:0;padding:12px;border-radius:10px;border
 #modeBar button[aria-pressed=false]{background:#eff6ed;color:var(--forest)}
 #treeWrap{position:relative;border:1px solid #d8e8db;border-radius:15px;background-color:#fbfdfb;background-image:radial-gradient(#dbeadd 1px,transparent 1px);background-size:19px 19px;overflow:hidden}
 #treePort{width:100%;height:min(67vh,740px);min-height:390px;overflow:auto;touch-action:none;overscroll-behavior:contain;position:relative}
-#treePort svg{display:block;margin:auto;max-width:none;user-select:none}
+#treePort svg{display:block;margin:0;max-width:none;flex-shrink:0;user-select:none}
 #mapControls{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;background:#fffe;padding:5px;border-radius:12px;border:1px solid var(--edge)}
 #mapControls button{padding:8px 11px}
 #emptyOverlay{padding:50px 14px;text-align:center;color:var(--muted)}
@@ -335,9 +335,9 @@ header .brand-text p,header .brand-text small{display:block}
   </label>
     <label for="mapSpacing">Avstand mellom personene
     <select id="mapSpacing">
-      <option value="normal">God avstand</option>
+      <option value="normal" selected>God avstand</option>
       <option value="airy">Veldig luftig</option>
-      <option value="extra" selected>Ekstra stor avstand</option>
+      <option value="extra">Ekstra stor avstand</option>
     </select>
   </label>
   <span class="hint">Velg en historisk person og utforsk den grenen. «Vis alt» åpner fullskjerm med zoom, og «Alle historiske» viser også personer uten felles forbindelse.</span>
@@ -463,6 +463,7 @@ const $=id=>document.getElementById(id);
 const NS="http://www.w3.org/2000/svg";
 let people=new Map(),links=[],mine=null,focused=null,homePerson=null,mode="ancestors";
 let chart={width:1000,height:600,scale:1},selected=null;
+let viewportFrame=0,viewportSize=null;
 const displayRoles={mor:"Mor",far:"Far",mormor:"Mormor",morfar:"Morfar",farmor:"Farmor",farfar:"Farfar"};
 const roleGenders={mor:"kvinne",far:"mann",mormor:"kvinne",morfar:"mann",farmor:"kvinne",farfar:"mann"};
 function svgEl(tag,attrs){
@@ -508,8 +509,9 @@ function reachable(start,direction){
  return visited;
 }
 function familyMembers(){
- if(!focused||!people.has(focused))return new Set();
+ // Archive has no selected root: collect nodes before checking focused.
  if(mode==="archive")return new Set(people.keys());
+ if(!focused||!people.has(focused))return new Set();
  if(mode==="family"){
   const up=reachable(focused,"ancestors");
   for(const id of reachable(focused,"descendants"))up.add(id);
@@ -566,7 +568,7 @@ function nodeLabel(name){
  return result;
 }
 
-let branchSide="both",generationLimit="all",mapSpacing="extra";
+let branchSide="both",generationLimit="all",mapSpacing="normal";
 function spacingConfig(){
  if(mapSpacing==="normal")return {nodeW:194,nodeH:84,gapX:75,gapY:135,pad:85};
  if(mapSpacing==="airy")return {nodeW:205,nodeH:90,gapX:145,gapY:195,pad:100};
@@ -864,7 +866,7 @@ function render(){
  const layout=computeMapLayout();
  const {ids,split,sideMap,loc,width,height,nodeW,nodeH,keys}=layout,port=$("treePort");
  if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
- const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
+ const svg=svgEl("svg",{width,height,viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
  if(split&&layout.panels?.length){
   for(const band of layout.panels){
    svg.append(svgEl("rect",{x:band.x-12,y:15,width:band.w+24,height:height-35,rx:20,fill:band.fill,stroke:band.stroke,"stroke-width":1.8}));
@@ -1066,10 +1068,13 @@ function centerAt(id){
 }
 function focusReadable(id){
  const port=$("treePort");
- const readable=Math.max(0.8,Math.min(1.15,port.clientWidth/310));
- chart.scale=1;
- setZoom(readable,0,0);
- centerAt(id||mine||focused);
+ // A hidden viewport must never supply a zero-sized initial zoom.
+ if(!lastMapLayout||port.clientWidth<40||port.clientHeight<40)return;
+ const target=lastMapLayout.loc.has(id)?id:
+  [selected,mine,focused,...lastMapLayout.loc.keys()].find(key=>lastMapLayout.loc.has(key));
+ setZoom(Math.max(.85,Math.min(1.1,port.clientWidth/310)),0,0);
+ centerAt(target);
+ viewportSize={width:port.clientWidth,height:port.clientHeight};
 }
 function setImmersive(on){
  if(immersive===on)return;
@@ -1080,10 +1085,9 @@ function setImmersive(on){
  $("zoomFit").setAttribute("aria-expanded",String(on));
  if(on){
   $("branchPopup").classList.add("hidden");
-  $("generationLimit").value="all";
-  generationLimit="all";
+  $("generationLimit").value=generationLimit;
   $("fullBranchSide").value=branchSide;
-  $("fullGenerationLimit").value="all";
+  $("fullGenerationLimit").value=generationLimit;
   setSidebarOpen(!(window.matchMedia&&window.matchMedia("(max-width:760px)").matches));
   render();
   requestAnimationFrame(()=>focusReadable(focused||mine));
@@ -1107,31 +1111,24 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&immersive)setImmers
 
 function setZoom(next,cx,cy){
  const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
- const old=chart.scale;next=Math.max(.001,Math.min(3.5,next));
+ if(!Number.isFinite(next)||port.clientWidth<40||port.clientHeight<40)return;
+ const old=chart.scale;next=Math.max(.35,Math.min(3.5,next));
  if(cx===undefined)cx=port.clientWidth/2;if(cy===undefined)cy=port.clientHeight/2;
  const anchorX=(port.scrollLeft+cx)/old,anchorY=(port.scrollTop+cy)/old;
  chart.scale=next;
  svg.setAttribute("width",String(chart.width*next));
  svg.setAttribute("height",String(chart.height*next));
+ svg.style.width=chart.width*next+"px";svg.style.height=chart.height*next+"px";
  port.scrollLeft=anchorX*next-cx;port.scrollTop=anchorY*next-cy;
 }
 function autoFrame(loc,ids,nodeW,nodeH){
- const view=$("treePort");
- const fitRatio=Math.min((view.clientWidth-24)/chart.width,(view.clientHeight-24)/chart.height);
- if(fitRatio>=0.45){fit();return}
- // Et veldig stort slektstre skal starte med lesbare navn, ikke krympes til uleselig miniatyr.
- const readable=Math.max(0.55,Math.min(1,view.clientWidth/(nodeW*2.1)));
- chart.scale=1;setZoom(readable,0,0);
- const anchor=ids.has(selected)?selected:ids.has(mine)?mine:ids.has(focused)?focused:[...ids][0];
- const pos=loc.get(anchor);
- if(pos){
-   view.scrollLeft=Math.max(0,(pos.x+nodeW/2)*chart.scale-view.clientWidth/2);
-   view.scrollTop=Math.max(0,(pos.y+nodeH/2)*chart.scale-view.clientHeight*0.65);
- }
+ // Initial display is a readable neighbourhood; overview is an explicit action.
+ focusReadable(ids.has(selected)?selected:ids.has(mine)?mine:focused);
 }
 function fit(){
- const port=$("treePort");const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
- chart.scale=1;setZoom(Math.min(1.2,Math.max(.001,ratio)),0,0);
+ const port=$("treePort");if(port.clientWidth<40||port.clientHeight<40)return;
+ const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
+ setZoom(Math.min(1.2,Math.max(.35,ratio)),0,0);
  port.scrollLeft=Math.max(0,(chart.width*chart.scale-port.clientWidth)/2);
  port.scrollTop=0;
 }
@@ -1416,7 +1413,11 @@ port.addEventListener("touchmove",e=>{
   drag={x:t.clientX,y:t.clientY};
  }
 },{passive:false});
-port.addEventListener("touchend",e=>{if(e.touches.length<2)pinch=null;if(e.touches.length===0)drag=null},{passive:true});
+port.addEventListener("touchend",e=>{
+ pinch=null;
+ drag=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;
+},{passive:true});
+port.addEventListener("touchcancel",()=>{drag=null;pinch=null},{passive:true});
 // Musehjulet zoomer direkte når pekeren er over selve slektskartet.
  // Utenfor kartflaten fungerer vanlig sideskrolling som før.
 port.addEventListener("wheel",e=>{
@@ -1435,13 +1436,20 @@ port.addEventListener("pointermove",e=>{
 port.addEventListener("pointerup",()=>{drag=null});
 // Ved resize på mobil (nettleserlinje, tastatur eller skuff) må ikke et
 // stort historisk kart krympes helt ned til en prikk.
-window.addEventListener("resize",()=>{
- if(!people.size||!$("app").classList.contains("hidden")===false)return;
- requestAnimationFrame(()=>{
-  if(immersive)focusReadable(focused||selected||[...people.keys()][0]);
-  else if(lastMapLayout)focusReadable(focused||selected||[...people.keys()][0]);
- });
-});
+function preserveViewport(){
+  cancelAnimationFrame(viewportFrame);
+  viewportFrame=requestAnimationFrame(()=>{
+   const width=port.clientWidth,height=port.clientHeight;
+   if(!lastMapLayout||width<40||height<40)return;
+   if(viewportSize){
+    port.scrollLeft+=(viewportSize.width-width)/2;
+    port.scrollTop+=(viewportSize.height-height)/2;
+   }else focusReadable(selected||mine||focused);
+   viewportSize={width,height};
+  });
+ }
+ if(typeof ResizeObserver!=="undefined")new ResizeObserver(preserveViewport).observe(port);
+ else window.addEventListener("resize",preserveViewport);
 async function displayTree(data){
  if(!Array.isArray(data.persons)||!Array.isArray(data.relationships))
   throw Error("Uventet svar fra historisk familiearkiv");

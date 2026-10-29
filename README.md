@@ -63,3 +63,13 @@ Slektskartet regner nå ut slektskapsavstand **fra brukerens egen private profil
 - Administratoren kan nå velge historisk kjønn i `admin.html` for personer der dette er sikkert kjent; ingen av de 79 historiske personene ble automatisk klassifisert ved innføring av feltet.
 
 Testet med syntetiske slektsdata fra foreldre til åtte tipp-generasjoner, sidegrener og etterkommere. Manuell visuell mobilsesjon er ikke utført etter denne endringen.
+
+## Kartretting 29. oktober 2026
+
+Familiekodekartet åpnet arkivet uten valgt person, men `familyMembers()` returnerte tomt før arkivmodus ble sjekket. Arkivmodus samler nå alle tilgjengelige noder uavhengig av valgt person.
+
+Begge kartsidene starter med lesbare kort, eksplisitte SVG-dimensjoner og mindre standardavstand. Skjulte kart måles ikke for zoom. Skjermendringer beholder zoom og kartets midtpunkt; zoom kan ikke krympes til en prikk. Kniping kan gå direkte over i flytting med én finger.
+
+Personlig kart krever fortsatt `auth.getUser()` og aktivt medlemskap før slektsdata hentes. Startpunktet er egen konto, med foreldre og besteforeldre som første generasjonsfilter. Manglende privat profil bruker kun egen medlemsoppføring som etikett, uten navnematching mot andre personer. Søk og visningsvalg finnes i et lukkbart sidepanel. Ukjente familieplasser betyr ikke at bestemte foreldre er bekreftet.
+
+Kjør `node tests/map-regression.mjs`. Testene bruker syntetiske data og en enkel DOM-modell for arkiv uten rot, innramming, skjult kart, skjermendringer, kniping, samtykke, personlig start og avvist tilgang. De erstatter ikke en visuell test i Safari/Chrome på en fysisk mobil. Ingen databaseregler eller slektsdata ble endret. Visuell forhåndsvisning var utilgjengelig i arbeidsmiljøet ved denne rettingen.

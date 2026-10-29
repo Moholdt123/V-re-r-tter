@@ -32,7 +32,7 @@ input[type=search]{width:100%;min-width:0;padding:12px;border-radius:10px;border
 #modeBar button[aria-pressed=false]{background:#eff6ed;color:var(--forest)}
 #treeWrap{position:relative;border:1px solid #d8e8db;border-radius:15px;background-color:#fbfdfb;background-image:radial-gradient(#dbeadd 1px,transparent 1px);background-size:19px 19px;overflow:hidden}
 #treePort{width:100%;height:min(67vh,740px);min-height:390px;overflow:auto;touch-action:none;overscroll-behavior:contain;position:relative}
-#treePort svg{display:block;margin:auto;max-width:none;user-select:none}
+#treePort svg{display:block;margin:0;max-width:none;flex-shrink:0;user-select:none}
 #mapControls{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;background:#fffe;padding:5px;border-radius:12px;border:1px solid var(--edge)}
 #mapControls button{padding:8px 11px}
 #emptyOverlay{padding:50px 14px;text-align:center;color:var(--muted)}
@@ -116,6 +116,13 @@ header .brand-text{display:block;min-width:0}
 header .brand-text h1{margin:0}
 header .brand-text p,header .brand-text small{display:block}
 
+
+#personalSidebar{display:none}
+#treeWrap.immersive #personalSidebar:not([hidden]){display:block;position:absolute;top:0;bottom:0;left:0;width:min(88vw,340px);z-index:8;background:#fff;padding:16px;overflow:auto;box-shadow:6px 0 25px #173e3033}
+#personalSidebar .searchline{grid-template-columns:minmax(0,1fr)}
+#personalSidebar #matches{max-height:45vh}
+#personalSidebar a{color:var(--forest)}
+#treeWrap.immersive #treePort{min-width:0;min-height:0}
 </style>
 </head>
 <body>
@@ -142,7 +149,7 @@ header .brand-text p,header .brand-text small{display:block}
   </div>
   <a href="./familie.html#shareLivingPanel" style="display:inline-block;font-size:12px;margin-top:10px;color:var(--forest);font-weight:700">Endre om du selv vil vises</a>
  </section>
- <div class="searchline">
+ <div id="personalSearchHome"><div class="searchline">
    <input id="search" type="search" placeholder="Søk etter navn …" aria-label="Finn person i slektstreet" autocomplete="off">
    <button id="showMine" type="button">🌱 Finn meg</button>
  </div>
@@ -154,6 +161,7 @@ header .brand-text p,header .brand-text small{display:block}
    <button data-mode="archive" aria-pressed="false">Alle registrerte</button>
  </div>
 
+ </div>
  <div id="branchControls">
   <label for="branchSide">Hvilken side?
     <select id="branchSide">
@@ -172,9 +180,9 @@ header .brand-text p,header .brand-text small{display:block}
   </label>
     <label for="mapSpacing">Avstand mellom personene
     <select id="mapSpacing">
-      <option value="normal">God avstand</option>
+      <option value="normal" selected>God avstand</option>
       <option value="airy">Veldig luftig</option>
-      <option value="extra" selected>Ekstra stor avstand</option>
+      <option value="extra">Ekstra stor avstand</option>
     </select>
   </label>
   <span class="hint">Trykk «Vis alt» for å åpne slektstreet i fullskjerm. Dra langt i alle retninger for å utforske generasjonene.</span>
@@ -189,6 +197,7 @@ header .brand-text p,header .brand-text small{display:block}
   <div id="fullScreenBar" aria-label="Kontroller for slektskart i fullskjerm">
    <div class="fullRow">
     <strong>🌳 Hele slektstreet</strong>
+    <button id="personalSearchToggle" type="button" class="secondary" aria-controls="personalSidebar" aria-expanded="false">☰ Søk</button>
     <button id="fullBack" type="button" class="secondary" disabled>← Tilbake</button>
     <button id="fullHome" type="button" class="secondary">🌱 Til meg</button>
     <button id="fullOverview" type="button" class="secondary">Oversikt</button>
@@ -210,6 +219,7 @@ header .brand-text p,header .brand-text small{display:block}
   </div>
 
 
+  <aside id="personalSidebar" aria-label="Søk i slektstreet" hidden><button id="personalSearchClose" type="button" class="secondary">Lukk søk ✕</button><div id="personalSearchBody"></div><p class="muted">Private opplysninger vises etter kontoens tilgang. Navnesøk bekrefter ikke slektskap.</p><a href="./familie.html#family">Registrer eller kontroller din familiegren</a></aside>
   <aside id="branchPopup" class="hidden" aria-live="polite" aria-label="Utforsk valgt slektning">
    <div class="row space">
     <h3 id="popupPerson"></h3>
@@ -254,6 +264,7 @@ const $=id=>document.getElementById(id);
 const NS="http://www.w3.org/2000/svg";
 let account=null,people=new Map(),links=[],mine=null,focused=null,mode="family";
 let chart={width:1000,height:600,scale:1},selected=null;
+let viewportFrame=0,viewportSize=null;
 const displayRoles={mor:"Mor",far:"Far",mormor:"Mormor",morfar:"Morfar",farmor:"Farmor",farfar:"Farfar"};
 const roleGenders={mor:"kvinne",far:"mann",mormor:"kvinne",morfar:"mann",farmor:"kvinne",farfar:"mann"};
 function svgEl(tag,attrs){
@@ -398,8 +409,9 @@ function reachable(start,direction){
  return visited;
 }
 function familyMembers(){
- if(!focused||!people.has(focused))return new Set();
+ // Archive has no selected root: collect nodes before checking focused.
  if(mode==="archive")return new Set(people.keys());
+ if(!focused||!people.has(focused))return new Set();
  if(mode==="family"){
   const up=reachable(focused,"ancestors");
   for(const id of reachable(focused,"descendants"))up.add(id);
@@ -456,7 +468,7 @@ function nodeLabel(name){
  return result;
 }
 
-let branchSide="both",generationLimit="2",mapSpacing="extra";
+let branchSide="both",generationLimit="2",mapSpacing="normal";
 function spacingConfig(){
  if(mapSpacing==="normal")return {nodeW:194,nodeH:84,gapX:75,gapY:135,pad:85};
  if(mapSpacing==="airy")return {nodeW:205,nodeH:90,gapX:145,gapY:195,pad:100};
@@ -771,7 +783,7 @@ function render(){
  const layout=computeMapLayout();
  const {ids,split,sideMap,loc,width,height,nodeW,nodeH,keys}=layout,port=$("treePort");
  if(!ids.size){port.replaceChildren();$("treeCount").textContent="Ingen registrerte slektninger";return}
- const svg=svgEl("svg",{viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
+ const svg=svgEl("svg",{width,height,viewBox:"0 0 "+width+" "+height,role:"img","aria-label":"Slektskart med "+ids.size+" personer fordelt på "+keys.length+" generasjonsnivåer"});
  if(split&&layout.panels?.length){
   for(const band of layout.panels){
    svg.append(svgEl("rect",{x:band.x-12,y:15,width:band.w+24,height:height-35,rx:20,fill:band.fill,stroke:band.stroke,"stroke-width":1.8}));
@@ -1006,24 +1018,39 @@ function centerAt(id){
 }
 function focusReadable(id){
  const port=$("treePort");
- const readable=Math.max(0.8,Math.min(1.15,port.clientWidth/310));
- chart.scale=1;
- setZoom(readable,0,0);
- centerAt(id||mine||focused);
+ // A hidden viewport must never supply a zero-sized initial zoom.
+ if(!lastMapLayout||port.clientWidth<40||port.clientHeight<40)return;
+ const target=lastMapLayout.loc.has(id)?id:
+  [selected,mine,focused,...lastMapLayout.loc.keys()].find(key=>lastMapLayout.loc.has(key));
+ setZoom(Math.max(.85,Math.min(1.1,port.clientWidth/310)),0,0);
+ centerAt(target);
+ viewportSize={width:port.clientWidth,height:port.clientHeight};
 }
+
+function setPersonalSearch(open){
+ $("personalSidebar").hidden=!open;
+ $("personalSearchToggle").setAttribute("aria-expanded",String(open));
+ if(open)$("search").focus();else $("personalSearchToggle").focus();
+}
+$("personalSearchToggle").onclick=()=>setPersonalSearch($("personalSidebar").hidden);
+$("personalSearchClose").onclick=()=>setPersonalSearch(false);
+
 function setImmersive(on){
  if(immersive===on)return;
  immersive=on;
+ const searchHome=$("personalSearchHome"),searchBody=$("personalSearchBody");
+ (on?searchBody:searchHome).append(...(on?searchHome:searchBody).children);
+ $("personalSidebar").hidden=true;
+ $("personalSearchToggle").setAttribute("aria-expanded","false");
  $("treeWrap").classList.toggle("immersive",on);
  document.body.classList.toggle("tree-fullscreen",on);
  $("zoomFit").textContent=on?"Lukk":"Vis alt";
  $("zoomFit").setAttribute("aria-expanded",String(on));
  if(on){
   $("branchPopup").classList.add("hidden");
-  $("generationLimit").value="all";
-  generationLimit="all";
+  $("generationLimit").value=generationLimit;
   $("fullBranchSide").value=branchSide;
-  $("fullGenerationLimit").value="all";
+  $("fullGenerationLimit").value=generationLimit;
   render();
   requestAnimationFrame(()=>focusReadable(focused||mine));
  }else{
@@ -1049,31 +1076,24 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&immersive)setImmers
 
 function setZoom(next,cx,cy){
  const port=$("treePort"),svg=port.querySelector("svg");if(!svg)return;
- const old=chart.scale;next=Math.max(.001,Math.min(3.5,next));
+ if(!Number.isFinite(next)||port.clientWidth<40||port.clientHeight<40)return;
+ const old=chart.scale;next=Math.max(.35,Math.min(3.5,next));
  if(cx===undefined)cx=port.clientWidth/2;if(cy===undefined)cy=port.clientHeight/2;
  const anchorX=(port.scrollLeft+cx)/old,anchorY=(port.scrollTop+cy)/old;
  chart.scale=next;
  svg.setAttribute("width",String(chart.width*next));
  svg.setAttribute("height",String(chart.height*next));
+ svg.style.width=chart.width*next+"px";svg.style.height=chart.height*next+"px";
  port.scrollLeft=anchorX*next-cx;port.scrollTop=anchorY*next-cy;
 }
 function autoFrame(loc,ids,nodeW,nodeH){
- const view=$("treePort");
- const fitRatio=Math.min((view.clientWidth-24)/chart.width,(view.clientHeight-24)/chart.height);
- if(fitRatio>=0.45){fit();return}
- // Et veldig stort slektstre skal starte med lesbare navn, ikke krympes til uleselig miniatyr.
- const readable=Math.max(0.55,Math.min(1,view.clientWidth/(nodeW*2.1)));
- chart.scale=1;setZoom(readable,0,0);
- const anchor=ids.has(selected)?selected:ids.has(mine)?mine:ids.has(focused)?focused:[...ids][0];
- const pos=loc.get(anchor);
- if(pos){
-   view.scrollLeft=Math.max(0,(pos.x+nodeW/2)*chart.scale-view.clientWidth/2);
-   view.scrollTop=Math.max(0,(pos.y+nodeH/2)*chart.scale-view.clientHeight*0.65);
- }
+ // Initial display is a readable neighbourhood; overview is an explicit action.
+ focusReadable(ids.has(selected)?selected:ids.has(mine)?mine:focused);
 }
 function fit(){
- const port=$("treePort");const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
- chart.scale=1;setZoom(Math.min(1.2,Math.max(.001,ratio)),0,0);
+ const port=$("treePort");if(port.clientWidth<40||port.clientHeight<40)return;
+ const ratio=Math.min((port.clientWidth-24)/chart.width,(port.clientHeight-24)/chart.height);
+ setZoom(Math.min(1.2,Math.max(.35,ratio)),0,0);
  port.scrollLeft=Math.max(0,(chart.width*chart.scale-port.clientWidth)/2);
  port.scrollTop=0;
 }
@@ -1194,7 +1214,11 @@ port.addEventListener("touchmove",e=>{
   drag={x:t.clientX,y:t.clientY};
  }
 },{passive:false});
-port.addEventListener("touchend",e=>{if(e.touches.length<2)pinch=null;if(e.touches.length===0)drag=null},{passive:true});
+port.addEventListener("touchend",e=>{
+ pinch=null;
+ drag=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;
+},{passive:true});
+port.addEventListener("touchcancel",()=>{drag=null;pinch=null},{passive:true});
 // Musehjulet zoomer direkte når pekeren er over selve slektskartet.
  // Utenfor kartflaten fungerer vanlig sideskrolling som før.
 port.addEventListener("wheel",e=>{
@@ -1211,7 +1235,20 @@ port.addEventListener("pointermove",e=>{
  if(e.pointerType==="mouse"&&drag&&e.buttons===1){port.scrollLeft-=e.clientX-drag.x;port.scrollTop-=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY}}
 });
 port.addEventListener("pointerup",()=>{drag=null});
-window.addEventListener("resize",()=>{if(people.size)fit()});
+function preserveViewport(){
+  cancelAnimationFrame(viewportFrame);
+  viewportFrame=requestAnimationFrame(()=>{
+   const width=port.clientWidth,height=port.clientHeight;
+   if(!lastMapLayout||width<40||height<40)return;
+   if(viewportSize){
+    port.scrollLeft+=(viewportSize.width-width)/2;
+    port.scrollTop+=(viewportSize.height-height)/2;
+   }else focusReadable(selected||mine||focused);
+   viewportSize={width,height};
+  });
+ }
+ if(typeof ResizeObserver!=="undefined")new ResizeObserver(preserveViewport).observe(port);
+ else window.addEventListener("resize",preserveViewport);
 async function start(){
  const {data:auth,error:authError}=await db.auth.getUser();
  if(authError||!auth?.user){
@@ -1220,7 +1257,7 @@ async function start(){
  }
  account=auth.user;
  const {data:member,error:memberError}=await db.from("familie_medlemmer")
- .select("status,rolle").eq("bruker_id",account.id).maybeSingle();
+ .select("status,rolle,visningsnavn").eq("bruker_id",account.id).maybeSingle();
  if(memberError||member?.status!=="aktiv"){
   $("loadingMsg").textContent="Du må være et aktivt familiemedlem for å bruke slektskartet.";
   return;
@@ -1246,14 +1283,18 @@ async function start(){
   if(privateError){$("loadingMsg").textContent="Kunne ikke hente privat slektsgren: "+privateError.message;return;}
   sideBranches=privateData||[];
  }
- rebuildGraph(h.data||[],t.data||[],s.data,r.data||[],b.data||[],sideBranches,v.data||[],account.id,ghosts.data||[],approved.data||[],grandparents.data||[]);
+ rebuildGraph(h.data||[],t.data||[],s.data||{navn:member.visningsnavn||"Deg",fodt_dato:null},r.data||[],b.data||[],sideBranches,v.data||[],account.id,ghosts.data||[],approved.data||[],grandparents.data||[]);
  renderOptInMembers(v.data||[]);
  renderAnonymousRelatives(ghosts.data||[],v.data||[],account.id);
  if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}
  focused=mine||[...people.keys()][0];
  $("loading").classList.add("hidden");$("app").classList.remove("hidden");
  if(mine)$("search").placeholder="Søk etter navn (f.eks. ditt eget) …";
- syncMode();render();if(mine)choose(mine,false);
+ syncMode();render();
+ setImmersive(true);
+ if(mine){
+  $("branchTrailLine").textContent="Ditt tre · bare registrerte forbindelser. Ukjente familieplasser er ikke bekreftede personer.";
+ }
  const params=new URLSearchParams(location.hash.slice(1));
  const requested=params.get("person");
  if(requested&&people.has("h:"+requested)){
