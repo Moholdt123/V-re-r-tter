@@ -66,7 +66,7 @@ header .brand-text p,header .brand-text small{display:block}
   <div class="stat"><b id="countMemories">–</b><span>Historier og filer</span></div>
  </div>
  <nav aria-label="Hopp til administratorfunksjoner">
-  <a href="#password">🔐 Passord</a><a href="#members">👨‍👩‍👧 Medlemmer</a><a href="#persons">🌳 Personer</a><a href="#links">🔗 Slektsforbindelser</a><a href="#stories">📷 Arkiv</a><a href="#privacy">🛡️ Personvern</a>
+  <a href="#password">🔐 Passord</a><a href="#members">👨‍👩‍👧 Medlemmer</a><a href="#anonymousRelatives">🌫️ Grå familieplasser</a><a href="#persons">🌳 Personer</a><a href="#links">🔗 Slektsforbindelser</a><a href="#stories">📷 Arkiv</a><a href="#privacy">🛡️ Personvern</a>
  </nav>
  <p id="globalStatus" class="status" aria-live="polite"></p>
  <section class="card" id="password">
@@ -85,6 +85,25 @@ header .brand-text p,header .brand-text small{display:block}
   <p class="muted">Her kan du åpne eller sperre personlige medlemskontoer. Folk som bare bruker familiekoden har ikke egne kontoer i denne listen. Administratorrollen kan ikke endres med familiekoden.</p>
   <div id="memberList" class="scrollList"><p class="muted">Henter kontoer …</p></div>
   <p id="memberStatus" class="status" aria-live="polite"></p>
+ </section>
+ <section class="card" id="anonymousRelatives">
+  <div class="eyebrow">Bare administrator · Navn skjult som standard</div>
+  <h3>🌫️ Grå familieplasser</h3>
+  <p class="muted">Legg til for eksempel en ukjent tante som en grå person i slektstreet, uten navn, fødselsdato eller andre identifiserende detaljer. Visningen krever godkjent personlig innlogging. Koble plassen til en kjent forelder hvis du vet hvilken gren den hører til. Når personen melder seg inn og selv samtykker, kan du knytte plassen til den godkjente kontoen.</p>
+  <form id="anonymousRelativeForm">
+    <div class="two">
+     <div><label for="anonymousRelation">Hva slags slektning?</label>
+      <select id="anonymousRelation"><option value="tante">Tante</option><option value="onkel">Onkel</option><option value="mor">Mor</option><option value="far">Far</option><option value="søsken">Søsken</option><option value="barn">Barn</option><option value="kusine">Kusine</option><option value="fetter">Fetter</option><option value="slektning">Annen slektning</option></select>
+     </div>
+     <div><label for="anonymousParent">Hvem er forelderen til denne personen?</label>
+      <select id="anonymousParent"><option value="">Forelderen er ikke registrert ennå</option></select>
+     </div>
+    </div>
+    <p class="muted">For en tante eller onkel velger du for eksempel en besteforelder som mor eller far til den anonyme personen. Dersom du ikke vet det, kan plassen vises uten kobling inntil videre.</p>
+    <button type="submit" id="anonymousCreate">+ Legg inn grå plass uten navn</button>
+  </form>
+  <p id="anonymousStatus" class="status" role="status" aria-live="polite"></p>
+  <div id="anonymousList" class="scrollList"></div>
  </section>
  <section class="card" id="persons">
   <div class="eyebrow">Rediger slektstreet</div><h3>Historiske personer 🌳</h3>
@@ -196,6 +215,79 @@ function renderMembers(){
   target.append(item);
  }
 }
+// Anonyme grå plasser administreres separat fra profiler for nålevende.
+let anonymousRelatives=[],visibleMembers=[];
+async function loadAnonymousRelatives(){
+ const [ghosts,live]=await Promise.all([
+  db.from("familie_anonyme_slektninger").select("id,betegnelse,forelder_historisk_id,forelder_synlig_bruker_id,matchet_bruker_id").order("opprettet"),
+  db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn")
+ ]);
+ if(ghosts.error||live.error){
+  notice("anonymousStatus","Kunne ikke hente grå familieplasser: "+(ghosts.error||live.error).message,true);return;
+ }
+ anonymousRelatives=ghosts.data||[];visibleMembers=live.data||[];
+ const candidates=$("anonymousParent");candidates.replaceChildren(new Option("Forelder er foreløpig ukjent",""));
+ for(const p of people){
+  if(p.lever===true)continue;
+  const op=document.createElement("option");op.value="h:"+p.id;op.textContent="🌳 "+p.navn;candidates.append(op);
+ }
+ for(const p of visibleMembers){
+  const op=document.createElement("option");op.value="v:"+p.bruker_id;op.textContent="🌱 "+p.navn+" (har samtykket)";candidates.append(op);
+ }
+ renderAnonymousRelatives();
+}
+function renderAnonymousRelatives(){
+ const list=$("anonymousList");list.replaceChildren();
+ if(!anonymousRelatives.length){list.append(el("p","Ingen grå familieplasser er lagt inn ennå.","muted"));return}
+ for(const ghost of anonymousRelatives){
+  const card=el("div",undefined,"unit");
+  const name=ghost.betegnelse.charAt(0).toLocaleUpperCase("nb")+ghost.betegnelse.slice(1);
+  const parent=ghost.forelder_historisk_id?people.find(p=>p.id===ghost.forelder_historisk_id)?.navn||"ukjent":
+   ghost.forelder_synlig_bruker_id?visibleMembers.find(x=>x.bruker_id===ghost.forelder_synlig_bruker_id)?.navn||"ikke synlig":"ikke valgt";
+  card.append(el("strong","🌫️ "+name+" · navn skjult"));
+  card.append(el("small","Knyttet til forelder: "+parent));
+  const row=el("div",undefined,"row");row.style.marginTop="10px";
+  const assign=document.createElement("select");assign.style.maxWidth="260px";
+  assign.append(new Option("Fortsatt anonym",""));
+  for(const person of visibleMembers)assign.append(new Option("🌱 "+person.navn,person.bruker_id));
+  assign.value=visibleMembers.some(p=>p.bruker_id===ghost.matchet_bruker_id)?ghost.matchet_bruker_id:"";
+  const save=button("Koble til godkjent medlem",async()=>{
+   const who=assign.value;
+   if(who&&ghost.forelder_synlig_bruker_id===who){notice("anonymousStatus","Et medlem kan ikke være sin egen forelder.",true);return}
+   if(!confirm(who?"Bekreft at den registrerte personen hører til denne grå plassen?":"Skal personen vises anonymt igjen?"))return;
+   save.disabled=true;
+   const {error}=await db.from("familie_anonyme_slektninger")
+      .update({matchet_bruker_id:who||null}).eq("id",ghost.id);
+   if(error)notice("anonymousStatus","Kunne ikke oppdatere: "+error.message,true);
+   else{notice("anonymousStatus","Familieplassen er oppdatert.");await loadAnonymousRelatives();}
+   save.disabled=false;
+  });
+  const remove=button("Slett grå plass",async()=>{
+   if(!confirm("Slette denne anonyme plassen fra familietreet?"))return;
+   remove.disabled=true;
+   const {error}=await db.from("familie_anonyme_slektninger").delete().eq("id",ghost.id);
+   if(error)notice("anonymousStatus","Kunne ikke slette: "+error.message,true);
+   else{notice("anonymousStatus","Den grå plassen er fjernet.");await loadAnonymousRelatives();}
+   remove.disabled=false;
+  });
+  row.append(assign,save,remove);card.append(row);list.append(card);
+ }
+}
+$("anonymousRelativeForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(!sessionUser)return;
+ const btn=$("anonymousCreate");btn.disabled=true;
+ const val=$("anonymousParent").value;
+ const row={
+  betegnelse:$("anonymousRelation").value,opprettet_av:sessionUser.id,
+  forelder_historisk_id:val.startsWith("h:")?val.slice(2):null,
+  forelder_synlig_bruker_id:val.startsWith("v:")?val.slice(2):null
+ };
+ const {error}=await db.from("familie_anonyme_slektninger").insert(row);
+ if(error)notice("anonymousStatus","Kunne ikke opprette plass: "+error.message,true);
+ else{notice("anonymousStatus","Grå familieplass opprettet uten navn.");await loadAnonymousRelatives();}
+ btn.disabled=false;
+});
 function populatePersonSelect(){
  const search=$("personSearch").value.trim().toLocaleLowerCase("nb"),select=$("personSelect"),selected=select.value;
  select.replaceChildren(new Option("➕ Ny historisk person",""));
@@ -260,7 +352,7 @@ async function refresh(){
   $("countConnections").textContent=connections.length;
   $("countMembers").textContent=members.length;
   $("countMemories").textContent=stories.length+files.length;
-  renderMembers();populatePersonSelect();populateConnectionChoices();renderArchive();
+  renderMembers();populatePersonSelect();populateConnectionChoices();renderArchive();await loadAnonymousRelatives();
   notice("globalStatus","Administratoroversikten er oppdatert.");
  }catch(e){notice("globalStatus",e.message,true)}
  finally{refreshing=false}
