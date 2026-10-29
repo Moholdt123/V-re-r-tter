@@ -286,6 +286,15 @@ function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],shared
   mine="me";
   addNode({id:mine,name:self.navn,born:self.fodt_dato?Number(self.fodt_dato.slice(0,4)):null,kind:"self"});
   const aliases=new Map();
+  // Når en faktisk forelder er godkjent, bruk denne noden i stedet for en
+  // ekstra, navnløs mor-/far-plassholder i barnets personlige kart.
+  const allowedVisible=new Set(sharedVisible.map(x=>x.bruker_id));
+  for(const link of approvedParentLinks){
+   if(link.barn_bruker_id!==accountId||!["mor","far"].includes(link.forelder_rolle))continue;
+   const id=link.historisk_person_id?"h:"+link.historisk_person_id:
+    link.forelder_bruker_id&&allowedVisible.has(link.forelder_bruker_id)?"v:"+link.forelder_bruker_id:null;
+   if(id&&people.has(id))aliases.set(link.forelder_rolle,id);
+  }
   for(const b of bridges)if(b.kobling==="samme_person"&&people.has("h:"+b.historisk_person_id)){
    const id="h:"+b.historisk_person_id;
    aliases.set(b.relasjon,id);
@@ -1182,7 +1191,7 @@ async function start(){
   db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id),
   db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn"),
   db.from("familie_anonyme_slektninger").select("id,betegnelse,forelder_historisk_id,forelder_synlig_bruker_id,matchet_bruker_id").order("opprettet"),
-  db.from("familie_foreldrekoblinger").select("barn_bruker_id,forelder_bruker_id,historisk_person_id").eq("status","godkjent")
+  db.from("familie_foreldrekoblinger").select("barn_bruker_id,forelder_rolle,forelder_bruker_id,historisk_person_id").eq("status","godkjent")
  ]);
  const err=h.error||t.error||s.error||r.error||b.error||v.error||ghosts.error||approved.error;
  if(err){$("loadingMsg").textContent="Kunne ikke laste slektsdata. "+err.message;return}
