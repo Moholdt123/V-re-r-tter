@@ -121,3 +121,22 @@ const positions=relatives.run('[...lastMapLayout.loc.values()]');
 for(let i=0;i<positions.length;i++)for(let j=0;j<i;j++)assert.ok(positions[i].y!==positions[j].y||Math.abs(positions[i].x-positions[j].x)>=194,'no overlapping cards');
 assert.ok(relatives.run('links.some(l=>l.to==="x:cousin"&&l.confidence==="usikker")'));
 console.log('PASS siblings, aunts and cousins in family view; names hidden; no card overlaps; uncertain source marked');
+
+for(const role of ['administrator','medlem']){
+ const app=load('slektskart.html'),tables=[];
+ app.context.location.search='?preview=member';
+ app.context.mockDB.auth={getUser:async()=>({data:{user:{id:'verified-account'}},error:null})};
+ app.context.mockDB.from=table=>{
+  tables.push(table);
+  const q={select(){return q},eq(){return q},order(){return q},maybeSingle(){return q},then(resolve,reject){return Promise.resolve({data:table==='familie_medlemmer'?{status:'aktiv',rolle:role,visningsnavn:'Real account'}:table==='levende_profiler'?null:[],error:null}).then(resolve,reject)}};return q;
+ };
+ await app.run('start()');app.flush();
+ if(role==='administrator'){
+  assert.equal(app.run('people.get("me").name'),'Eksempelmedlem');
+  for(const table of ['levende_profiler','familiegren_utkast','familiegren_historiske_koblinger','private_slekt_sidegrener'])assert.ok(!tables.includes(table),'preview must not query '+table);
+ }else{
+  assert.equal(app.run('memberPreview'),false,'URL cannot grant admin preview privileges');
+  assert.equal(app.run('people.get("me").name'),'Real account');
+ }
+}
+console.log('PASS member preview excludes private admin queries; regular member cannot activate preview');

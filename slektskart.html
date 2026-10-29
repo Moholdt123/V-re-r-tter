@@ -127,6 +127,7 @@ header .brand-text p,header .brand-text small{display:block}
 </head>
 <body>
 <header><a class="brand" href="./index.html" aria-label="Våre røtter – til forsiden"><span class="brand-icon" aria-hidden="true">🌳</span><span class="brand-text"><h1>Våre røtter</h1><p>Slektskart · Personlig innlogging</p></span></a><a href="./familie.html?vis=profil">Min profil og familierommet</a></header>
+<a id="adminPreviewLink" href="./vis-som.html" hidden style="position:fixed;right:12px;bottom:16px;z-index:10000;background:#173e30;color:white;padding:12px 16px;border:2px solid white;border-radius:12px;text-decoration:none">👁 Vis som …</a>
 <main>
 <section class="card" id="loading"><h2>Åpner slektskartet …</h2><p class="muted" id="loadingMsg">Sjekker innlogging og familietilgang.</p></section>
 <section id="app" class="hidden">
@@ -1126,6 +1127,7 @@ function choose(id,scrollToDetails=true){
  $("openProfile").textContent=n.kind==="provisional"?"Ingen personprofil · uavklart ledd":n.kind==="anonymous"?"Ingen personprofil publisert":n.kind==="optin"?"Privat profil er ikke delt":isPrivate(n)?"Åpne mitt private familieutkast":"Åpne personprofil";
  $("openProfile").onclick=()=>{
   if(n.kind==="optin"||n.kind==="anonymous"||n.kind==="provisional")return;
+  if(memberPreview)return;
   if(isPrivate(n))location.href="./familie.html#family";
   else location.href="./familie.html#person="+encodeURIComponent(n.dbid);
  };
@@ -1263,6 +1265,7 @@ function preserveViewport(){
  }
  if(typeof ResizeObserver!=="undefined")new ResizeObserver(preserveViewport).observe(port);
  else window.addEventListener("resize",preserveViewport);
+let memberPreview=false;
 async function start(){
  const {data:auth,error:authError}=await db.auth.getUser();
  if(authError||!auth?.user){
@@ -1276,12 +1279,18 @@ async function start(){
   $("loadingMsg").textContent="Du må være et aktivt familiemedlem for å bruke slektskartet.";
   return;
  }
+ memberPreview=member.rolle==="administrator"&&new URLSearchParams(location.search).get("preview")==="member";
+ $("adminPreviewLink").hidden=member.rolle!=="administrator"||memberPreview;
+ if(memberPreview){
+  document.addEventListener("click",event=>{if(event.target.closest("a")){event.preventDefault();event.stopImmediatePropagation();}},true);
+ }
+ const empty=Promise.resolve({data:[],error:null});
  const [h,t,s,r,b,v,ghosts,approved,grandparents]=await Promise.all([
   db.from("personer").select("id,navn,fodt_ar,dod_ar,kjonn").order("navn"),
   db.from("slektsforbindelser").select("fra_person,til_person,type,sikkerhet"),
-  db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",account.id).maybeSingle(),
-  db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",account.id),
-  db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id),
+  memberPreview?Promise.resolve({data:null,error:null}):db.from("levende_profiler").select("navn,fodt_dato").eq("bruker_id",account.id).maybeSingle(),
+  memberPreview?empty:db.from("familiegren_utkast").select("relasjon,navn").eq("bruker_id",account.id),
+  memberPreview?empty:db.from("familiegren_historiske_koblinger").select("relasjon,historisk_person_id,kobling").eq("bruker_id",account.id),
   db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn"),
   db.from("familie_anonyme_slektninger").select("id,betegnelse,forelder_historisk_id,forelder_synlig_bruker_id,matchet_bruker_id").order("opprettet"),
   db.from("familie_foreldrekoblinger").select("barn_bruker_id,forelder_rolle,forelder_bruker_id,historisk_person_id").eq("status","godkjent"),
@@ -1290,14 +1299,14 @@ async function start(){
  const err=h.error||t.error||s.error||r.error||b.error||v.error||ghosts.error||approved.error||grandparents.error;
  if(err){$("loadingMsg").textContent="Kunne ikke laste slektsdata. "+err.message;return}
  let sideBranches=[];
- if(member.rolle==="administrator"){
+ if(member.rolle==="administrator"&&!memberPreview){
   const {data:privateData,error:privateError}=await db.from("private_slekt_sidegrener")
     .select("node_key,navn,fodt_ar,dod_ar,livsstatus,forelder1_key,forelder2_key,kilde")
     .eq("bruker_id",account.id);
   if(privateError){$("loadingMsg").textContent="Kunne ikke hente privat slektsgren: "+privateError.message;return;}
   sideBranches=privateData||[];
  }
- rebuildGraph(h.data||[],t.data||[],s.data||{navn:member.visningsnavn||"Deg",fodt_dato:null},r.data||[],b.data||[],sideBranches,v.data||[],account.id,ghosts.data||[],approved.data||[],grandparents.data||[]);
+ rebuildGraph(h.data||[],t.data||[],s.data||{navn:memberPreview?"Eksempelmedlem":member.visningsnavn||"Deg",fodt_dato:null},r.data||[],b.data||[],sideBranches,v.data||[],memberPreview?"preview-example-member":account.id,ghosts.data||[],approved.data||[],grandparents.data||[]);
  renderOptInMembers(v.data||[]);
  renderAnonymousRelatives(ghosts.data||[],v.data||[],account.id);
  if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}

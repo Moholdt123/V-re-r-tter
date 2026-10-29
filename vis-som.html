@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Vis som · Våre røtter</title>
+<style>*{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui;background:#f3f7f0;color:#173e30;height:100dvh;display:flex;flex-direction:column}header{padding:12px 16px;background:#173e30;color:white}nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}button,a{font:inherit;border-radius:8px;padding:9px 12px;border:1px solid #b5cdb9}button{cursor:pointer;background:white;color:#173e30}button[aria-pressed=true]{background:#d6edbd;outline:2px solid #d6edbd}a{color:white;text-decoration:none;margin-left:auto}p{margin:8px 0 0;font-size:13px}iframe{flex:1;width:100%;border:0;background:white;min-height:0}[hidden]{display:none!important}#error{padding:20px}</style></head>
+<body><header><nav aria-label="Forhåndsvis som" id="controls" hidden><strong>Vis som</strong><button data-mode="guest" aria-pressed="false">Gjest</button><button data-mode="member" aria-pressed="false">Medlem</button><a href="./slektskart.html">Tilbake til admin</a></nav><p id="description" role="status">Kontrollerer administratortilgang …</p></header><p id="error" hidden></p><iframe id="preview" title="Forhåndsvisning av Våre røtter" hidden></iframe>
+<script type="module">
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/+esm";
+const db=createClient("https://wtswwjancxiofkjmulvl.supabase.co","sb_publishable_UbN2Fmn7U4J8HRaPZBTxNg_GVIaMm4g");
+const $=id=>document.getElementById(id);
+function selectMode(mode){
+ const guest=mode==="guest";
+ document.querySelectorAll("[data-mode]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.mode===mode)));
+ $("description").textContent=guest?"Gjest uten innlogging. Innsending er slått av i forhåndsvisningen. Adminkontoen din er fortsatt innlogget.":"Eksempel på godkjent medlem uten registrerte familieforbindelser. Dine private grener er utelatt. Dette tester visningen, ikke en annen kontos tilgangsregler.";
+ $("preview").src=guest?"./familie.html?preview=guest":"./slektskart.html?preview=member";
+ $("preview").hidden=false;
+}
+async function start(){
+ const {data:{user},error}=await db.auth.getUser();
+ if(error||!user)throw new Error("Logg inn som administrator for å bruke forhåndsvisningen.");
+ const {data:member,error:memberError}=await db.from("familie_medlemmer").select("rolle,status").eq("bruker_id",user.id).maybeSingle();
+ if(memberError||member?.rolle!=="administrator"||member?.status!=="aktiv")throw new Error("Denne funksjonen er bare for aktive administratorer.");
+ $("controls").hidden=false;
+ document.querySelectorAll("[data-mode]").forEach(button=>button.addEventListener("click",()=>selectMode(button.dataset.mode)));
+ selectMode("guest");
+}
+start().catch(error=>{$("description").textContent=error.message;$("error").hidden=false;const a=document.createElement("a");a.href="./familie.html";a.textContent="Gå til innlogging";a.style.color="#173e30";$("error").append(a);});
+</script></body></html>

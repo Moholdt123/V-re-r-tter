@@ -142,6 +142,7 @@ header .brand-text p,header .brand-text small{display:block}
 <section class="card hidden" id="administratorLink" style="margin-bottom:18px;background:#e9f4e8;border:1px solid #b5d3bc">
    <div class="eyebrow">Kun for deg med administratorrettigheter</div>
    <h3>👑 Administratorpanel</h3>
+   <p><a href="./vis-som.html">👁 Vis siden som gjest eller medlem</a></p>
    <p class="muted">Styr familiepassord, medlemskontoer og det historiske slektstreet fra ett sted.</p>
    <a href="./admin.html" style="display:inline-block;background:var(--dark);color:#fff;text-decoration:none;padding:12px 17px;border-radius:10px;font-weight:700">Åpne administratorpanelet</a>
   </section>
@@ -332,7 +333,7 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 const URL="https://wtswwjancxiofkjmulvl.supabase.co";
 const PUBLIC_KEY="sb_publishable_UbN2Fmn7U4J8HRaPZBTxNg_GVIaMm4g";
 const APP_URL="https://moholdt123.github.io/V-re-r-tter/familie.html";
-const db=createClient(URL,PUBLIC_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+let db=createClient(URL,PUBLIC_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 const show=id=>$(id).classList.remove("hidden");
 const hide=id=>$(id).classList.add("hidden");
@@ -926,7 +927,7 @@ $("joinForm").addEventListener("submit",async e=>{
  finally{btn.disabled=false;}
 });
 $("checkAccess").addEventListener("click",()=>updateState().catch(error=>notice("joinStatus",authErrorMessage(error),true)));
-configureGoogleLogin();
+if(new URLSearchParams(location.search).get("preview")!=="guest")configureGoogleLogin();
 async function signOut(){await db.auth.signOut();chosen=null;await updateState()}
 $("signOut").addEventListener("click",signOut);$("signOutJoin").addEventListener("click",signOut);
 async function loadPrivate(){
@@ -1082,6 +1083,17 @@ port.addEventListener("touchstart",e=>{if(e.touches.length===1){finger={x:e.touc
 port.addEventListener("touchmove",e=>{e.preventDefault();if(e.touches.length>=2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pinchStart)setTreeZoom(startZoom*d/pinchStart)}else if(e.touches.length===1&&finger){const t=e.touches[0];port.scrollLeft-=t.clientX-finger.x;port.scrollTop-=t.clientY-finger.y;finger={x:t.clientX,y:t.clientY}}},{passive:false});
 port.addEventListener("touchend",()=>{finger=null;pinchStart=0},{passive:true});
 db.auth.onAuthStateChange((event)=>{if(["SIGNED_IN","SIGNED_OUT"].includes(event))setTimeout(updateState,0)});
-updateState().catch(err=>notice("loginStatus","Kunne ikke starte: "+authErrorMessage(err),true));
+async function initializeFamilyPage(){
+ if(new URLSearchParams(location.search).get("preview")==="guest"){
+  const {data:{user:owner}}=await db.auth.getUser();
+  const {data:access}=owner?await db.from("familie_medlemmer").select("rolle,status").eq("bruker_id",owner.id).maybeSingle():{data:null};
+  if(access?.rolle!=="administrator"||access?.status!=="aktiv"){location.replace("./familie.html");return;}
+  db=createClient(URL,PUBLIC_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:"roots-guest-preview"}});
+  document.addEventListener("submit",event=>{event.preventDefault();event.stopImmediatePropagation();notice("loginStatus","Forhåndsvisning: ingen e-post sendes. Bruk en testkonto for å teste registreringen.");},true);
+  document.addEventListener("click",event=>{if(event.target.closest("a,button#googleLogin")){event.preventDefault();event.stopImmediatePropagation();}},true);
+ }
+ await updateState();
+}
+initializeFamilyPage().catch(err=>notice("loginStatus","Kunne ikke starte: "+authErrorMessage(err),true));
 </script>
 </body></html>

@@ -37,3 +37,18 @@ assert.ok(!html.includes('id="familyCode"'));
 assert.ok(html.includes('settings.external?.google!==true'));
 assert.ok(!html.match(/id="shareLivingToggle"[^>]*checked/));
 console.log('PASS saved login routes to tree, waiting/blocked users stay outside, Google gated, consent not preselected');
+
+const initCode=script.slice(script.indexOf('async function initializeFamilyPage(){'),script.indexOf('initializeFamilyPage().catch'));
+for(const role of ['administrator','medlem']){
+ let isolated=false,updated=false,redirect=null;
+ const events=[];
+ const actualDB={auth:{getUser:async()=>({data:{user:{id:'owner'}}})},from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{rolle:role,status:'aktiv'}})})})})};
+ const ctx=vm.createContext({URLSearchParams,db:actualDB,URL:'https://example.test',PUBLIC_KEY:'public',location:{search:'?preview=guest',replace:p=>redirect=p},document:{addEventListener:(...args)=>events.push(args)},createClient:(url,key,options)=>{assert.equal(options.auth.persistSession,false);assert.equal(options.auth.detectSessionInUrl,false);assert.equal(options.auth.autoRefreshToken,false);isolated=true;return {}},updateState:async()=>updated=true,notice(){}});
+ vm.runInContext(initCode,ctx);await ctx.initializeFamilyPage();
+ assert.equal(isolated,role==='administrator');assert.equal(updated,role==='administrator');
+ if(role==='administrator'){
+  const submit=events.find(x=>x[0]==='submit');assert.equal(submit[2],true);
+  let prevented=false,stopped=false;submit[1]({preventDefault:()=>prevented=true,stopImmediatePropagation:()=>stopped=true});assert.ok(prevented&&stopped);
+ }else assert.equal(redirect,'./familie.html');
+}
+console.log('PASS guest preview uses isolated auth, blocks submissions, requires active administrator');
