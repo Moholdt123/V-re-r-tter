@@ -85,6 +85,7 @@ console.log('PASS guest name is a suggestion, never authenticated identity');
 // Exercise the real asynchronous start flow with missing own profile and denied access.
 for(const status of ['aktiv','venter','signed-out']){
  const app=load('slektskart.html'),tables=[];
+ app.context.mockDB.rpc=async()=>({data:{audience:'member',nodes:[],edges:[]},error:null});
  app.context.mockDB.auth={getUser:async()=>({data:{user:status==='signed-out'?null:{id:'verified-account'}},error:null})};
  app.context.mockDB.from=table=>{
   tables.push(table);
@@ -92,6 +93,7 @@ for(const status of ['aktiv','venter','signed-out']){
    then(resolve,reject){return Promise.resolve({data:table==='familie_medlemmer'?{status,rolle:'medlem',visningsnavn:'Bekreftet medlem'}:table==='levende_profiler'?null:[],error:null}).then(resolve,reject)}};
   return q;
  };
+ if(status==='signed-out')app.context.mockDB.rpc=async()=>({data:{audience:'guest',nodes:[{id:'g:ancestor',name:'Public ancestor',kind:'historical'}],edges:[]}});
  await app.run('start()');app.flush();
  if(status==='aktiv'){
   assert.equal(app.run('mine'),'me');
@@ -99,6 +101,8 @@ for(const status of ['aktiv','venter','signed-out']){
   assert.equal(app.run('focused'), 'me');
   assert.equal(app.run('immersive'),true);
   assert.equal(app.run('generationLimit'),'2');
+ }else if(status==='signed-out'){
+  assert.equal(app.run('mine'),null);assert.equal(app.run('people.size'),1);
  }else{
   assert.equal(app.run('people.size'),0);
   assert.ok(tables.every(t=>t==='familie_medlemmer'),'no genealogy requests before active membership');
@@ -125,6 +129,7 @@ console.log('PASS siblings, aunts and cousins in family view; names hidden; no c
 for(const role of ['administrator','medlem']){
  const app=load('slektskart.html'),tables=[];
  app.context.location.search='?preview=member';
+ app.context.mockDB.rpc=async()=>({data:{audience:'member',nodes:[],edges:[]},error:null});
  app.context.mockDB.auth={getUser:async()=>({data:{user:{id:'verified-account'}},error:null})};
  app.context.mockDB.from=table=>{
   tables.push(table);
@@ -140,3 +145,21 @@ for(const role of ['administrator','medlem']){
  }
 }
 console.log('PASS member preview excludes private admin queries; regular member cannot activate preview');
+
+const folding=load('slektskart.html');
+folding.run(`rebuildGraph([{id:'grandparent',navn:'Grandparent'},{id:'parent',navn:'Parent'},{id:'aunt',navn:'Aunt'},{id:'cousin',navn:'Cousin'}],[{fra_person:'grandparent',til_person:'parent',type:'forelder_barn'},{fra_person:'grandparent',til_person:'aunt',type:'forelder_barn'},{fra_person:'aunt',til_person:'cousin',type:'forelder_barn'}]);focused='h:grandparent';resetBranchView(focused);render();setZoom(1.7,0,0);togglePersonBranch(focused)`);
+assert.equal(folding.run('lastMapLayout.ids.size'),3,'one generation opens');
+assert.equal(folding.run('chart.scale'),1.7,'zoom preserved');
+folding.run(`togglePersonBranch('h:aunt')`);
+assert.ok(folding.run(`lastMapLayout.ids.has('h:cousin')`));
+folding.run(`togglePersonBranch('h:grandparent')`);
+assert.equal(folding.run('lastMapLayout.ids.size'),1,'closing removes descendants');
+folding.run(`togglePersonBranch('h:grandparent')`);
+assert.equal(folding.run('lastMapLayout.ids.size'),3,'reopening does not reopen grandchildren');
+console.log('PASS one generation per click, close/reopen, cousin expansion, zoom preserved');
+folding.run(`mode='archive';progressiveEnabled=false;render();togglePersonBranch('h:grandparent')`);
+assert.equal(folding.run('lastMapLayout.ids.size'),1,'full branch view can also collapse');
+const namedAdmin=load('slektskart.html');
+namedAdmin.run(`adminNames=true;rebuildGraph([],[],{navn:'Admin'},[],[],[{node_key:'relative',navn:'Source name',livsstatus:'ukjent',forelder1_key:'p:far'}],[],'account')`);
+assert.equal(namedAdmin.run('people.get("x:relative").name'),'Source name');
+console.log('PASS full view collapses; administrator sees source names');
