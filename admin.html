@@ -66,7 +66,7 @@ header .brand-text p,header .brand-text small{display:block}
   <div class="stat"><b id="countMemories">–</b><span>Historier og filer</span></div>
  </div>
  <nav aria-label="Hopp til administratorfunksjoner">
-  <a href="#password">🔐 Passord</a><a href="#members">👨‍👩‍👧 Medlemmer</a><a href="#anonymousRelatives">🌫️ Grå familieplasser</a><a href="#persons">🌳 Personer</a><a href="#links">🔗 Slektsforbindelser</a><a href="#stories">📷 Arkiv</a><a href="#privacy">🛡️ Personvern</a>
+  <a href="#password">🔐 Passord</a><a href="#members">👨‍👩‍👧 Medlemmer</a><a href="#anonymousRelatives">🌫️ Grå familieplasser</a><a href="#parentApprovals">🌿 Koble foreldre</a><a href="#persons">🌳 Personer</a><a href="#links">🔗 Slektsforbindelser</a><a href="#stories">📷 Arkiv</a><a href="#privacy">🛡️ Personvern</a>
  </nav>
  <p id="globalStatus" class="status" aria-live="polite"></p>
  <section class="card" id="password">
@@ -105,7 +105,14 @@ header .brand-text p,header .brand-text small{display:block}
   <p id="anonymousStatus" class="status" role="status" aria-live="polite"></p>
   <div id="anonymousList" class="scrollList"></div>
  </section>
- <section class="card" id="persons">
+ <section class="card" id="parentApprovals">
+ <div class="eyebrow">Administrator · Bekreft slektskap</div>
+ <h3>🌿 Nye forespørsler om mor og far</h3>
+ <p class="muted">Her kommer forslag fra innloggede familiemedlemmer som selv har samtykket til å vises. Kontroller hvem forelderen faktisk er. Ingen linje vises i felleskartet før du godkjenner en registrert person. Hvis mor eller far ennå ikke finnes i arkivet, lar du forslaget stå til kontroll.</p>
+ <div id="pendingParentRequests" class="scrollList" aria-live="polite"><p class="muted">Henter forespørsler …</p></div>
+ <p id="parentApprovalStatus" class="status" role="status" aria-live="polite"></p>
+</section>
+<section class="card" id="persons">
   <div class="eyebrow">Rediger slektstreet</div><h3>Historiske personer 🌳</h3>
   <p class="muted">Du kan legge til og rette opplysninger om <strong>avdøde</strong> slektninger. Levende familiemedlemmer skal fortsatt bare registreres i private løsninger med avklart deling.</p>
   <div class="two">
@@ -288,6 +295,65 @@ $("anonymousRelativeForm").addEventListener("submit",async event=>{
  else{notice("anonymousStatus","Grå familieplass opprettet uten navn.");await loadAnonymousRelatives();}
  btn.disabled=false;
 });
+// Administrator gjennomgår foreldreforslag før en faktisk forelder-barn-kobling publiseres.
+async function loadPendingParentLinks(){
+ const {data,error}=await db.from("familie_foreldrekoblinger")
+  .select("id,barn_bruker_id,barn_navn,forelder_rolle,forelder_navn,forelder_bruker_id,historisk_person_id,status,opprettet")
+  .order("opprettet",{ascending:false});
+ const target=$("pendingParentRequests");target.replaceChildren();
+ if(error){notice("parentApprovalStatus","Kunne ikke hente forespørsler: "+error.message,true);return;}
+ const rows=(data||[]).filter(row=>row.status==="venter");
+ if(!rows.length){target.append(el("p","Ingen foreldrekoblinger venter på godkjenning.","muted"));return;}
+ for(const item of rows){
+  const box=el("div",undefined,"unit");
+  box.append(el("strong",item.barn_navn+" → "+(item.forelder_rolle==="mor"?"mor":"far")+": "+item.forelder_navn));
+  box.append(el("small","Foreslått "+formatDate(item.opprettet)+" · Kontroller slektskapet før du godkjenner"));
+  const select=document.createElement("select");select.style.maxWidth="330px";
+  select.append(new Option("Velg bekreftet forelder …",""));
+  for(const person of people){
+   if(person.lever===true)continue;
+   select.append(new Option("🌳 "+person.navn,"h:"+person.id));
+  }
+  for(const person of visibleMembers){
+   if(person.bruker_id===item.barn_bruker_id)continue;
+   select.append(new Option("🌱 "+person.navn+" (samtykket)","v:"+person.bruker_id));
+  }
+  if(item.historisk_person_id&&[...select.options].some(o=>o.value==="h:"+item.historisk_person_id))
+   select.value="h:"+item.historisk_person_id;
+  if(item.forelder_bruker_id&&[...select.options].some(o=>o.value==="v:"+item.forelder_bruker_id))
+   select.value="v:"+item.forelder_bruker_id;
+  const controls=el("div",undefined,"row");controls.style.marginTop="10px";
+  const approve=button("Godkjenn riktig forelder",async()=>{
+   if(!select.value){notice("parentApprovalStatus","Velg først den riktige, registrerte forelderen.",true);return}
+   const chosen=select.value;
+   const parentName=chosen.startsWith("h:")?people.find(p=>p.id===chosen.slice(2))?.navn:
+    visibleMembers.find(p=>p.bruker_id===chosen.slice(2))?.navn;
+   if(!parentName){notice("parentApprovalStatus","Fant ikke valgt person. Oppdater siden.",true);return}
+   if(!confirm("Bekreft at "+item.barn_navn+" har "+parentName+" som "+item.forelder_rolle+"? Dette gir en slektslinje i familiekartet når samtykkene gjelder."))return;
+   approve.disabled=true;
+   const {error:err}=await db.from("familie_foreldrekoblinger").update({
+    forelder_navn:parentName,
+    forelder_bruker_id:chosen.startsWith("v:")?chosen.slice(2):null,
+    historisk_person_id:chosen.startsWith("h:")?chosen.slice(2):null,
+    status:"godkjent",behandlet_av:sessionUser.id,behandlet:new Date().toISOString()
+   }).eq("id",item.id);
+   if(err)notice("parentApprovalStatus","Godkjenning feilet: "+err.message,true);
+   else{notice("parentApprovalStatus","Slektskoblingen er bekreftet.");await loadPendingParentLinks();}
+   approve.disabled=false;
+  });
+  const reject=button("Avvis",async()=>{
+   if(!confirm("Avvise foreldreforslaget? Medlemmet kan trekke det tilbake og sende et nytt."))return;
+   reject.disabled=true;
+   const {error:err}=await db.from("familie_foreldrekoblinger")
+    .update({status:"avvist",behandlet_av:sessionUser.id,behandlet:new Date().toISOString()})
+    .eq("id",item.id);
+   if(err)notice("parentApprovalStatus","Kunne ikke avvise: "+err.message,true);
+   else{notice("parentApprovalStatus","Forespørselen er avvist.");await loadPendingParentLinks();}
+   reject.disabled=false;
+  });
+  controls.append(select,approve,reject);box.append(controls);target.append(box);
+ }
+}
 function populatePersonSelect(){
  const search=$("personSearch").value.trim().toLocaleLowerCase("nb"),select=$("personSelect"),selected=select.value;
  select.replaceChildren(new Option("➕ Ny historisk person",""));
@@ -352,7 +418,7 @@ async function refresh(){
   $("countConnections").textContent=connections.length;
   $("countMembers").textContent=members.length;
   $("countMemories").textContent=stories.length+files.length;
-  renderMembers();populatePersonSelect();populateConnectionChoices();renderArchive();await loadAnonymousRelatives();
+  renderMembers();populatePersonSelect();populateConnectionChoices();renderArchive();await loadAnonymousRelatives();await loadPendingParentLinks();
   notice("globalStatus","Administratoroversikten er oppdatert.");
  }catch(e){notice("globalStatus",e.message,true)}
  finally{refreshing=false}
