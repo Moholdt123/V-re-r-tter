@@ -205,6 +205,23 @@ header .brand-text p,header .brand-text small{display:block}
  <p class="muted">Denne oversikten vises bare etter personlig innlogging. Her står kun medlemmer som selv har samtykket.</p>
  <div id="visibleRelativesList" class="family-links" aria-live="polite"></div>
 </section>
+<section class="card" id="parentLinkPanel" style="margin-bottom:18px;border:1px solid #bed7c5;background:#fff">
+ <div class="eyebrow">Bygg din familiegren</div>
+ <h3>🌳 Fortell hvem mor eller far er</h3>
+ <p class="muted">Når du har valgt å være synlig, kan du oppgi moren eller faren din. Velg en person som allerede finnes i slektstreet – eller skriv navnet hvis du ikke finner vedkommende. Administrator kontrollerer forbindelsen før den vises for andre.</p>
+ <form id="parentLinkForm">
+  <div class="two">
+   <div><label for="parentRole">Hvem er det?</label><select id="parentRole" required><option value="mor">Min mor</option><option value="far">Min far</option></select></div>
+   <div><label for="parentCandidate">Finn registrert forelder</label><select id="parentCandidate"><option value="">Ikke registrert / velg her …</option></select></div>
+  </div>
+  <label for="parentFullName">Forelderens navn</label>
+  <input id="parentFullName" type="text" autocomplete="off" maxlength="150" minlength="2" placeholder="For eksempel Kari Hansen" required>
+  <p class="muted" style="margin:6px 0 12px">Hvis du velger en person i listen, fylles navnet inn. Finner du ikke personen, skriver du navnet selv. Det blir et privat forslag, ikke en automatisk offentlig kobling.</p>
+  <button type="submit" id="parentLinkSend">🌿 Send inn familieforbindelsen</button>
+ </form>
+ <p id="parentLinkStatus" class="status" role="status" aria-live="polite"></p>
+ <div id="myParentRequests" style="display:grid;gap:9px;margin:9px 0" aria-live="polite"></div>
+</section>
 <section class="card" id="privateBranchPanel" style="margin-bottom:18px">
     <div class="eyebrow">Personlig og privat · Familieopplysninger til kontroll</div>
     <h3>Min familiegren 🌳</h3>
@@ -389,6 +406,106 @@ $("shareLivingForm").addEventListener("submit",async event=>{
  if(error)notice("shareLivingStatus","Kunne ikke lagre: "+authErrorMessage(error),true);
  else{await loadOwnVisibility();await loadVisibleRelatives();}
  button.disabled=false;
+});
+// Medlemmet foreslår forelder; administrator bekrefter slektskapet før det deles.
+let myParentRequests=[];
+let parentCandidates=new Map();
+async function loadParentCandidates(){
+ if(!user||profile?.status!=="aktiv")return;
+ const [living,historical]=await Promise.all([
+  db.from("familie_synlige_profiler").select("bruker_id,navn").eq("synlig_for_familien",true).order("navn"),
+  db.from("personer").select("id,navn,fodt_ar,dod_ar").eq("lever",false).order("navn")
+ ]);
+ const select=$("parentCandidate");select.replaceChildren();
+ const option=document.createElement("option");option.value="";
+ option.textContent="Ikke registrert / skriv navnet …";select.append(option);
+ if(living.error||historical.error){
+  notice("parentLinkStatus","Kunne ikke hente navn fra slektstreet. Du kan likevel skrive inn forelderens navn.",true);return;
+ }
+ parentCandidates=new Map();
+ const push=(id,name,label)=>{
+  const op=document.createElement("option");op.value=id;op.textContent=label;select.append(op);
+  parentCandidates.set(id,name);
+ };
+ for(const p of living.data||[]){
+  if(p.bruker_id===user.id)continue;
+  push("v:"+p.bruker_id,p.navn,"🌱 "+p.navn+" (har samtykket)");
+ }
+ for(const p of historical.data||[])
+  push("h:"+p.id,p.navn,"🌳 "+p.navn+" ("+(p.fodt_ar||"?")+"–"+(p.dod_ar||"?")+")");
+}
+$("parentCandidate").addEventListener("change",()=>{
+ const id=$("parentCandidate").value;
+ if(id&&parentCandidates.has(id))$("parentFullName").value=parentCandidates.get(id);
+});
+$("parentFullName").addEventListener("input",()=>{
+ const id=$("parentCandidate").value;
+ if(id&&$("parentFullName").value.trim()!==parentCandidates.get(id))$("parentCandidate").value="";
+});
+async function loadMyParentRequests(){
+ if(!user||profile?.status!=="aktiv")return;
+ const {data,error}=await db.from("familie_foreldrekoblinger")
+  .select("id,forelder_rolle,forelder_navn,status").eq("barn_bruker_id",user.id)
+  .order("opprettet",{ascending:false});
+ const out=$("myParentRequests");out.replaceChildren();
+ if(error){notice("parentLinkStatus","Kunne ikke laste foreldreforslagene: "+authErrorMessage(error),true);return;}
+ myParentRequests=data||[];
+ if(!myParentRequests.length){out.append(text("p","Ingen foreldreforslag sendt inn ennå.","muted"));return;}
+ for(const req of myParentRequests){
+  const row=document.createElement("div");
+  row.style.cssText="padding:11px 13px;background:#f7faf6;border:1px solid #dae8db;border-radius:11px";
+  row.append(text("strong",(req.forelder_rolle==="mor"?"Mor: ":"Far: ")+req.forelder_navn));
+  const status=req.status==="venter"?"Venter på bekreftelse":req.status==="godkjent"?
+   "Bekreftet · vises når nødvendige samtykker er gitt":"Ikke godkjent";
+  row.append(text("p",status,"muted"));
+  const retract=document.createElement("button");
+  retract.type="button";retract.className="secondary";retract.style.fontSize="12px";
+  retract.textContent="Trekk tilbake eller endre";
+  retract.addEventListener("click",async()=>{
+   retract.disabled=true;
+   const {error:e}=await db.from("familie_foreldrekoblinger").delete()
+    .eq("barn_bruker_id",user.id).eq("id",req.id);
+   if(e)notice("parentLinkStatus","Kunne ikke fjerne: "+authErrorMessage(e),true);
+   else{notice("parentLinkStatus","Forslaget er trukket tilbake. Du kan sende et nytt.");await loadMyParentRequests();}
+   retract.disabled=false;
+  });
+  row.append(retract);out.append(row);
+ }
+}
+$("parentLinkForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(!user||profile?.status!=="aktiv")return;
+ const btn=$("parentLinkSend");btn.disabled=true;
+ const own=await db.from("familie_synlige_profiler").select("navn,synlig_for_familien")
+  .eq("bruker_id",user.id).maybeSingle();
+ if(own.error||own.data?.synlig_for_familien!==true){
+  notice("parentLinkStatus","Velg først at du vil være synlig, og lagre valget over.",true);
+  btn.disabled=false;return;
+ }
+ const role=$("parentRole").value;
+ if(myParentRequests.some(r=>r.forelder_rolle===role)){
+  notice("parentLinkStatus","Du har allerede registrert denne forelderen. Trekk tilbake det gamle forslaget først.",true);
+  btn.disabled=false;return;
+ }
+ const name=$("parentFullName").value.trim().replace(/\s+/g," ");
+ const chosen=$("parentCandidate").value;
+ if(name.length<2||name.length>150){
+  notice("parentLinkStatus","Skriv inn forelderens navn.",true);btn.disabled=false;return;
+ }
+ const insert={
+  barn_bruker_id:user.id,barn_navn:own.data.navn,forelder_rolle:role,forelder_navn:name,
+  forelder_bruker_id:chosen.startsWith("v:")?chosen.slice(2):null,
+  historisk_person_id:chosen.startsWith("h:")?chosen.slice(2):null,
+  status:"venter"
+ };
+ const {error}=await db.from("familie_foreldrekoblinger").insert(insert);
+ if(error)notice("parentLinkStatus","Kunne ikke lagre forslaget: "+authErrorMessage(error),true);
+ else{
+  notice("parentLinkStatus","Forslaget er sendt til administrator. Ingen slektskobling vises før godkjenning.");
+  $("parentCandidate").value="";$("parentFullName").value="";
+  await loadMyParentRequests();
+ }
+ btn.disabled=false;
 });
 const privateFamilySlots=[
   ["mormor","Mormor"],["morfar","Morfar"],
@@ -590,6 +707,8 @@ async function updateState(){
  await loadOwnLivingProfile();
  await loadOwnVisibility();
  await loadVisibleRelatives();
+ await loadParentCandidates();
+ await loadMyParentRequests();
  await loadOwnFamilyBranch();
  await loadOwnHistoricalBridges();
  await loadResearchLeads();
