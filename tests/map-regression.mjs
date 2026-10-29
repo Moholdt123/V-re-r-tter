@@ -105,3 +105,19 @@ for(const status of ['aktiv','venter','signed-out']){
  }
 }
 console.log('PASS authenticated start without profile; inactive/signed-out access denied');
+
+const relatives=load('slektskart.html');
+relatives.run(`rebuildGraph([],[],{navn:'Testkonto'},[],[],[
+ {node_key:'sibling',navn:'Secret sibling',livsstatus:'levende',forelder1_key:'p:mor',forelder2_key:'p:far'},
+ {node_key:'aunt',navn:'Secret aunt',livsstatus:'ukjent',forelder1_key:'p:farmor',forelder2_key:'p:farfar'},
+ {node_key:'cousin',navn:'Secret cousin',livsstatus:'ukjent',forelder1_key:'x:aunt',kilde:'USIKKER: Test source'},
+],[],'test-account');focused=mine;mode='family';render()`);
+for(const id of ['x:sibling','x:aunt','x:cousin']){
+ assert.ok(relatives.run(`lastMapLayout.ids.has('${id}')`),'collateral relative visible in start map');
+ assert.equal(relatives.run(`people.get('${id}').name`),'Privat familiemedlem');
+}
+assert.equal(relatives.run('lastMapLayout.loc.get("me").y'),relatives.run('lastMapLayout.loc.get("x:sibling").y'));
+const positions=relatives.run('[...lastMapLayout.loc.values()]');
+for(let i=0;i<positions.length;i++)for(let j=0;j<i;j++)assert.ok(positions[i].y!==positions[j].y||Math.abs(positions[i].x-positions[j].x)>=194,'no overlapping cards');
+assert.ok(relatives.run('links.some(l=>l.to==="x:cousin"&&l.confidence==="usikker")'));
+console.log('PASS siblings, aunts and cousins in family view; names hidden; no card overlaps; uncertain source marked');

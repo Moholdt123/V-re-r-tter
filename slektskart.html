@@ -340,14 +340,19 @@ function rebuildGraph(history,ties,self,relatives,bridges,sideBranches=[],shared
     const personId="h:"+b.historisk_person_id;
     if(b.kobling==="forelder")connect(personId,roleId(b.relasjon),"familieopplysning");
   }
-  for(const p of sideBranches)if(p.node_key&&p.navn)
-    addNode({id:"x:"+p.node_key,name:p.navn,born:p.fodt_ar||null,died:p.dod_ar||null,
-      kind:"private",label:p.livsstatus==="avdod"?"Avdød · privat":"Privat"});
+  for(const p of sideBranches)if(p.node_key&&p.navn){
+    const deceased=p.livsstatus==="avdod";
+    addNode({id:"x:"+p.node_key,name:deceased?p.navn:"Privat familiemedlem",
+      born:deceased?p.fodt_ar||null:null,died:deceased?p.dod_ar||null:null,
+      kind:deceased?"private":"anonymous",label:deceased?"Avdød · privat":"Navn skjult · dokumentert familieplass"});
+  }
   for(const p of sideBranches){
     const id="x:"+p.node_key;
     if(!people.has(id))continue;
-    for(const parent of [p.forelder1_key,p.forelder2_key])
-      if(parent&&people.has(parent))connect(parent,id,"familieopplysning");
+    for(const key of [p.forelder1_key,p.forelder2_key]){
+      const parent=key?.startsWith("p:")?(aliases.get(key.slice(2))||key):key;
+      if(parent&&people.has(parent))connect(parent,id,p.kilde?.includes("USIKKER:")?"usikker":"familieopplysning");
+    }
   }
   addSharedFamilyConnections();
   function addSharedFamilyConnections(){
@@ -414,7 +419,17 @@ function familyMembers(){
  if(!focused||!people.has(focused))return new Set();
  if(mode==="family"){
   const up=reachable(focused,"ancestors");
-  for(const id of reachable(focused,"descendants"))up.add(id);
+  // Include documented siblings, aunts/uncles and cousins, not just direct ancestors.
+  const limit=generationLimit==="all"?Infinity:Number(generationLimit);
+  const ancestors=new Map([[focused,0]]),queue=[focused];
+  for(let i=0;i<queue.length;i++){
+   const id=queue[i],depth=ancestors.get(id);
+   if(depth>=limit)continue;
+   for(const parent of getNeighbors(id,"ancestors"))if(!ancestors.has(parent)){ancestors.set(parent,depth+1);queue.push(parent);}
+  }
+  for(const ancestor of ancestors.keys())for(const id of reachable(ancestor,"descendants"))up.add(id);
+  // Include the other documented parent of children, without inventing partnerships.
+  for(const id of [...up])for(const parent of getNeighbors(id,"ancestors"))up.add(parent);
   return up;
  }
  return reachable(focused,mode);
@@ -700,7 +715,7 @@ function computeMapLayout(){
  // Retningsbestemte slektsledd hindrer "innavl-illusjonen" i helhetskartet.
  if(focused&&ids.has(focused)){
   if(mode==="descendants")return descendantTreeLayout(ids,nodeW,nodeH,gapX,gapY,pad);
-  if(mode==="ancestors"||mode==="family"&&focused===mine){
+  if(mode==="ancestors"){
    const allAncestors=reachable(focused,"ancestors");
    const permitted=new Set([...ids].filter(id=>allAncestors.has(id)));
    const layout=ancestryLayout(focused,permitted,config);
@@ -715,7 +730,7 @@ function computeMapLayout(){
    }
    return layout;
   }
-  if(mode==="family")return centeredFamilyLayout(focused,state,config);
+  if(mode==="family"&&focused!==mine)return centeredFamilyLayout(focused,state,config);
  }
  const keys=[...levels.keys()].filter(k=>levels.get(k).some(id=>ids.has(id))).sort((a,b)=>a-b);
  if(!keys.length)return {...state,keys,loc:new Map(),width:650,height:400,nodeW,nodeH};
@@ -733,7 +748,7 @@ function computeMapLayout(){
    }
    orderWithinBranch(groups.maternal);orderWithinBranch(groups.paternal);orderWithinBranch(groups.shared);
    maxM=Math.max(maxM,groups.maternal.length);maxF=Math.max(maxF,groups.paternal.length);
-   maxShared=Math.max(maxShared,groups.shared.length);
+   maxShared=Math.max(maxShared,groups.shared.length+groups.self.length);
    bands.set(gen,groups);
   }
   const section=(count)=>Math.max(340,count*(nodeW+gapX)+80);
@@ -751,8 +766,7 @@ function computeMapLayout(){
    }
    put(groups.maternal,leftX,leftW);
    put(groups.paternal,rightX,rightW);
-   put(groups.shared,pad+leftW,middleW);
-   put(groups.self,0,width);
+   put([...groups.self,...groups.shared],pad+leftW,middleW);
   }
   state.panels=[
    {x:leftX,w:leftW,title:"MORS SIDE",fill:"#eef6f9",stroke:"#b8d7e4",color:"#31728d",count:[...ids].filter(id=>sideMap.get(id)==="maternal").length},
@@ -1278,7 +1292,7 @@ async function start(){
  let sideBranches=[];
  if(member.rolle==="administrator"){
   const {data:privateData,error:privateError}=await db.from("private_slekt_sidegrener")
-    .select("node_key,navn,fodt_ar,dod_ar,livsstatus,forelder1_key,forelder2_key")
+    .select("node_key,navn,fodt_ar,dod_ar,livsstatus,forelder1_key,forelder2_key,kilde")
     .eq("bruker_id",account.id);
   if(privateError){$("loadingMsg").textContent="Kunne ikke hente privat slektsgren: "+privateError.message;return;}
   sideBranches=privateData||[];
