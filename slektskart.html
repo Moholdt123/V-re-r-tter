@@ -1423,6 +1423,9 @@ async function start(){
   sideBranches=privateData||[];
  }
  rebuildGraph(h.data||[],t.data||[],s.data||{navn:memberPreview?"Eksempelmedlem":member.visningsnavn||"Deg",fodt_dato:null},r.data||[],b.data||[],sideBranches,v.data||[],memberPreview?"preview-example-member":account.id,ghosts.data||[],approved.data||[],grandparents.data||[]);
+ const oddAncestorId="h:75004955-a234-4dc1-b135-07746b588475";
+ $("oddAncestors").hidden=!people.has(oddAncestorId);
+ $("oddAncestors").onclick=()=>exploreBranch(oddAncestorId,"ancestors");
  renderOptInMembers(v.data||[]);
  renderAnonymousRelatives(ghosts.data||[],v.data||[],account.id);
  if(!people.size){$("loadingMsg").textContent="Slektskartet har ingen personer ennå.";return}
